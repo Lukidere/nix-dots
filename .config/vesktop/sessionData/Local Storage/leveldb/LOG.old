@@ -1,0 +1,15 @@
+2026/04/05-20:10:47.567 245f Reusing MANIFEST /home/dhm/.config/vesktop/sessionData/Local Storage/leveldb/MANIFEST-000001
+2026/04/05-20:10:47.570 245f Recovering log #34
+2026/04/05-20:10:47.570 245f Reusing old log /home/dhm/.config/vesktop/sessionData/Local Storage/leveldb/000034.log 
+2026/04/05-20:40:55.882 245e Level-0 table #38: started
+2026/04/05-20:40:55.893 245e Level-0 table #38: 55516 bytes OK
+2026/04/05-20:40:55.899 245e Delete type=0 #34
+2026/04/05-20:40:55.899 245e Compacting 4@0 + 1@1 files
+2026/04/05-20:40:55.904 245e Generated table #39@0: 32 keys, 63630 bytes
+2026/04/05-20:40:55.904 245e Compacted 4@0 + 1@1 files => 63630 bytes
+2026/04/05-20:40:55.910 245e compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/04/05-20:40:55.910 245e Delete type=2 #26
+2026/04/05-20:40:55.910 245e Delete type=2 #29
+2026/04/05-20:40:55.910 245e Delete type=2 #32
+2026/04/05-20:40:55.910 245e Delete type=2 #35
+2026/04/05-20:40:55.910 245e Delete type=2 #38
