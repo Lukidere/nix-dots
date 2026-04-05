@@ -10,6 +10,8 @@ in
     [
       # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      <home-manager/nixos>
+      ./home.nix
     ];
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "flakes" "nix-command" ];
