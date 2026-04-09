@@ -39,7 +39,7 @@
     "format": "",
     "tooltip": false,
     "on-click": "ghostty",
-    "on-click-right": "kitty"
+    "on-click-right": "foot"
   },
   "niri/workspaces": {
     "on-click": "activate",
@@ -62,7 +62,7 @@
     "interval": 1,
     "tooltip": true,
     "tooltip-format": "CPU Frequency: {avg_frequency} GHz",
-    "on-click": "alacritty -e btm"
+    "on-click": "ghostty -e btm"
   },
   "clock": {
     "interval": 1,

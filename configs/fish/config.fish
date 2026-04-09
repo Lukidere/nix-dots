@@ -187,7 +187,6 @@ alias cd='z'
 ### Environment ###
 ###################
 set -gx SHELL_CONFIG_DIR $HOME/.config
-set -gx DISPLAY :0
 set -gx EDITOR /run/current-system/sw/bin/nvim
 set -gx VISUAL /bin/nvim
 set -gx SUDO_EDITOR /bin/nvim

@@ -30,22 +30,19 @@ in
   boot.blacklistedKernelModules = [ "nouveau" ];
   # Use latest kernel.
   boot.kernelPackages = pkgs.linuxPackages_latest;
-
-  networking.hostName = "nixos"; # Define your hostname.
-
-  # Configure network connections interactively with nmcli or nmtui.
+  networking.hostName = "legion"; # Define your hostname.
+  #
+  #       ------ Sieć ------
+  #
   networking.networkmanager.enable = true;
-
-  # Time zone.
+  # Time zone
   time.timeZone = "Europe/Berlin";
-
-
-
-
-
   # Enable CUPS to print documents.
   services.printing.enable = true;
-  #nvidia
+  services.tailscale.enable = true;
+  #
+  #       ------ Grafika ------
+  #
   hardware.graphics = {
     enable = true;
   };
@@ -69,39 +66,14 @@ in
   };
   #niri-config
   programs.niri.enable = true;
-  services.flatpak.enable = true;
-  programs.fish.enable = true;
-  xdg.portal.enable = true;
-  xdg.portal.extraPortals = [
-    pkgs.xdg-desktop-portal-gtk
-  ];
   services.greetd = {
     enable = true;
     settings = {
       default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd \" dbus-run-session niri\"";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd \"${pkgs.niri}/bin/niri-session\"";
         user = "greeter";
       };
     };
-  };
-  fonts.packages = with pkgs; [
-    fira-code
-    nerd-fonts.jetbrains-mono
-  ];
-
-  # Sound.
-  services.pulseaudio.enable = false;
-
-  security.rtkit.enable = true;
-
-  services.pipewire = {
-    enable = true;
-
-    alsa.enable = true;
-    alsa.support32Bit = true;
-
-    pulse.enable = true;
-    wireplumber.enable = true;
   };
 
   #Enable touchpad support (enabled default in most desktopManager).
@@ -118,14 +90,6 @@ in
     ];
   };
   # QEMU i Libvirt
-  virtualisation.libvirtd = {
-    enable = true;
-    qemu = {
-      package = pkgs.qemu_kvm;
-      runAsRoot = true;
-      swtpm.enable = true; # Emulacja TPM (np. dla Windows 11)
-    };
-  };
   programs.steam.enable = true;
   environment.variables = {
     EDITOR = "/run/current-system/sw/bin/nvim";
@@ -143,11 +107,8 @@ in
     cifs-utils
     fish
     tuigreet
-    rustc
     jq
     wallust
-    cargo-leptos
-    cargo
     zoxide
     starship
     grim
@@ -157,6 +118,7 @@ in
     vesktop
     vicinae
     xdg-desktop-portal-gtk
+    xdg-desktop-portal-wlr
     gcc
     flatpak
     fastfetch
@@ -177,18 +139,76 @@ in
     spice-gtk
     spice-protocol
     virtio-win
-
-  ];
-  programs.nix-ld.enable = true;
-  programs.nix-ld.libraries = with pkgs; [
-    stdenv.cc.cc.lib
-    zlib # Wymagane przez wiele narzędzi
+    zathura
+    mako
+    tailscale
+    playerctl
+    rustc
+    cargo
+    rust-analyzer
+    cargo-leptos
+    trunk
+    gcc
+    cargo
+    wasm-bindgen-cli
+    pkg-config
+    rust-analyzer
     openssl
-    curl
-    glib
-    util-linux
-    icu
+    bottom
+    psmisc
+    networkmanagerapplet
+    bluez
+    nodejs_24
   ];
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      package = pkgs.qemu_kvm;
+      runAsRoot = true;
+      swtpm.enable = true; # Emulacja TPM (np. dla Windows 11)
+    };
+  };
+  # Fonts
+  fonts.packages = with pkgs; [
+    fira-code
+    nerd-fonts.jetbrains-mono
+  ];
+  services.dbus.enable = true;
+  # Sound.
+  services.pulseaudio.enable = false;
+
+  security.rtkit.enable = true;
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
+  services.pipewire = {
+    enable = true;
+
+    alsa.enable = true;
+    alsa.support32Bit = true;
+
+    pulse.enable = true;
+    wireplumber.enable = true;
+  };
+
+
+  services.flatpak.enable = true;
+  programs.fish.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = [
+      pkgs.xdg-desktop-portal-gtk
+      pkgs.xdg-desktop-portal-wlr
+    ];
+    config = {
+      niri = {
+        default = [ "gtk" ];
+        "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ]; # opcjonalnie dla udostępniania ekranu
+      };
+      common = {
+        default = [ "gtk" ];
+      };
+    };
+  };
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;

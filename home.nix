@@ -8,7 +8,10 @@
 
 
 
-    home.file.".config/niri/config.kdl".source = ./configs/niri/config.kdl;
+    home.file.".config/niri/config.kdl" = {
+      source = ./configs/niri/config.kdl;
+      force = true;
+    };
 
     home.file.".config/waybar/config.jsonc".source = ./configs/waybar/config.jsonc;
     home.file.".config/waybar/modules.json".source = ./configs/waybar/modules.json;

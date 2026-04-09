@@ -1,4 +1,3 @@
-if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
 
 -- AstroLSP allows you to customize the features in AstroNvim's LSP configuration engine
 -- Configuration documentation can be found with `:h astrolsp`
@@ -39,15 +38,19 @@ return {
     },
     -- enable servers that you already have installed without mason
     servers = {
-      -- "pyright"
+      "rust_analyzer"
     },
     -- customize language server configuration passed to `vim.lsp.config`
     -- client specific configuration can also go in `lsp/` in your configuration root (see `:h lsp-config`)
     config = {
+      rust_analyzer = {
+        cmd = { "rust-analyzer" },
+      },
       -- ["*"] = { capabilities = {} }, -- modify default LSP client settings such as capabilities
     },
     -- customize how language servers are attached
     handlers = {
+      rust_analyzer = false,
       -- a function with the key `*` modifies the default handler, functions takes the server name as the parameter
       -- ["*"] = function(server) vim.lsp.enable(server) end
 
