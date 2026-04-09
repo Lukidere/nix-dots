@@ -6,7 +6,42 @@
   home-manager.users.dhm = { ... }: {
     home.stateVersion = "25.11";
 
+    # ---------------------------------------------------------------------------
+    # dhmshell (Caelestia shell fork) – installed via flake.nix
+    # ---------------------------------------------------------------------------
+    # The `programs.caelestia` option is provided by dhmshell's Home Manager
+    # module (homeManagerModules.default injected in flake.nix).
+    #
+    # After switching:
+    #   sudo nixos-rebuild switch --flake .#legion
+    #
+    # The shell is managed as a systemd user service (caelestia.service) that
+    # starts when graphical-session.target is reached (i.e. when niri launches).
+    # Check its status with:
+    #   systemctl --user status caelestia
+    #   journalctl --user -u caelestia -f
+    programs.caelestia = {
+      enable = true;
 
+      # niri activates graphical-session.target via niri-session, so this is the
+      # correct target for starting the shell on niri.
+      systemd.target = "graphical-session.target";
+
+      # Pass required environment variables so Qt/QPA work properly on niri.
+      systemd.environment = [
+        "QT_QPA_PLATFORMTHEME=gtk3"
+        "QT_WAYLAND_DISABLE_WINDOWDECORATION=1"
+      ];
+
+      settings = {
+        # Use ghostty as the shell's built-in terminal launcher.
+        general.apps.terminal = [ "ghostty" ];
+
+        # Disable smart (auto) scheme generation so wallust stays in charge of
+        # the color scheme via its caelestia-scheme.json template.
+        services.smartScheme = false;
+      };
+    };
 
     home.file.".config/niri/config.kdl" = {
       source = ./configs/niri/config.kdl;

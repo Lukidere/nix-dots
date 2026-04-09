@@ -1,6 +1,14 @@
 spawn-at-startup "sh" "-c" "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_CLASS"
 spawn-at-startup "sh" "-c" "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_CLASS"
 spawn-at-startup "awww-daemon"
+// dhmshell (Caelestia shell fork) is started automatically via its systemd
+// user service (caelestia.service) once graphical-session.target is reached.
+// If you prefer to start it manually instead, comment the systemd target in
+// home.nix and uncomment the line below:
+//   spawn-at-startup "caelestia-shell"
+//
+// The shell includes its own bar. If you want to use caelestia's bar instead
+// of waybar, comment out the waybar line below.
 spawn-at-startup "waybar"
 spawn-at-startup "sh" "-c" "vicinae server &"
 spawn-at-startup "mako"

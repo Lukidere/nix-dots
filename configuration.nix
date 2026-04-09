@@ -3,15 +3,13 @@
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
 { config, lib, pkgs, ... }:
-let unstable = import <nixos-unstable> { };
-in
 {
   imports =
     [
       # Include the results of the hardware scan.
       ./hardware-configuration.nix
-      <home-manager/nixos>
-      ./home.nix
+      # home-manager and home.nix are injected by flake.nix; see flake.nix for
+      # instructions on how to build/switch.
     ];
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "flakes" "nix-command" ];
@@ -114,7 +112,7 @@ in
     grim
     slurp
     waybar
-    unstable.awww
+    awww
     vesktop
     vicinae
     xdg-desktop-portal-gtk

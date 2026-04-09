@@ -62,3 +62,10 @@ mako = { src = 'mako', dst = '~/.config/mako/config' }
 zathurarc = { src = 'zathurarc', dst = '~/.config/zathura/zathurarc' }
 
 vicinae = { src = 'vicinae.toml', dst = '~/.local/share/vicinae/themes/wallust.toml' }
+
+# dhmshell (Caelestia shell fork) – generates the M3-style color scheme that
+# the shell reads from ~/.local/state/caelestia/scheme.json.
+# The shell watches this file and reloads colors automatically on change.
+# Make sure ~/.local/state/caelestia/ exists before first use:
+#   mkdir -p ~/.local/state/caelestia
+caelestia = { src = 'caelestia-scheme.json', dst = '~/.local/state/caelestia/scheme.json' }
