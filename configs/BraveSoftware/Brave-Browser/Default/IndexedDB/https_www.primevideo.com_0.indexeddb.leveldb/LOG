@@ -1,0 +1,6 @@
+2026/04/06-21:00:57.344 3f2b Reusing MANIFEST /home/dhm/.config/BraveSoftware/Brave-Browser/Default/IndexedDB/https_www.primevideo.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/04/06-21:00:57.344 3f2b Recovering log #3
+2026/04/06-21:00:57.354 3f2b Reusing old log /home/dhm/.config/BraveSoftware/Brave-Browser/Default/IndexedDB/https_www.primevideo.com_0.indexeddb.leveldb/000003.log 
+2026/04/06-21:01:32.597 3f16 Level-0 table #5: started
+2026/04/06-21:01:32.611 3f16 Level-0 table #5: 997988 bytes OK
+2026/04/06-21:01:32.616 3f16 Delete type=0 #3

@@ -1,0 +1,12 @@
+Cachy 1.0 Cachy.qml
+Clock 1.0 Clock.qml
+Cpu 1.0 Cpu.qml
+Mpris 1.0 Mpris.qml
+Workspaces 1.0 Workspaces.qml
+Privacy 1.0 Privacy.qml
+Network 1.0 Network.qml
+Bluetooth 1.0 Bluetooth.qml
+AudioGroup 1.0 AudioGroup.qml
+BrightnessGroup 1.0 BrightnessGroup.qml
+Battery 1.0 Battery.qml
+Tray 1.0 Tray.qml
