@@ -7,10 +7,7 @@ import "./widgets"
 PanelWindow {
     id: root
 
-    // 1. Odbieramy dane o konkretnym monitorze od komponentu Variants
     required property var modelData
-
-    // 2. Przypisujemy ten pasek do tego konkretnego ekranu
     screen: modelData
 
     anchors { left: true; top: true; bottom: true }
@@ -26,8 +23,10 @@ PanelWindow {
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 8 }
         spacing: 4
         Cachy {}
-        Clock {}
-        Cpu {}
+        Clock { barScreen: root.modelData }
+        Cpu { barScreen: root.modelData }
+        Ram { barScreen: root.modelData }
+        Disk { barScreen: root.modelData }
     }
 
     Column {
@@ -41,10 +40,9 @@ PanelWindow {
     Column {
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
         spacing: 4
-        Network {}
-        Bluetooth {}
         AudioGroup {}
         BrightnessGroup {}
-        Battery {}
+        Battery { barScreen: root.modelData }
+        PowerButton { barScreen: root.modelData }
     }
 }

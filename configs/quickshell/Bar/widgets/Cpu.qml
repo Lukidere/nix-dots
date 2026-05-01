@@ -4,13 +4,14 @@ import "../../Theme"
 
 Item {
     id: root
+    property var barScreen
     width: 44; height: 44
     property real cpuPercent: 0
     property var  _prev: null
     Text {
         anchors { centerIn: parent; verticalCenterOffset: -6 }
         text: "󰻠"
-        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18
+        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
         color: ma.containsMouse ? Colors.color4
              : root.cpuPercent > 80 ? Colors.color1
              : root.cpuPercent > 50 ? Colors.color3
@@ -21,7 +22,14 @@ Item {
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 5 }
         text: Math.round(root.cpuPercent) + "%"; font.pixelSize: 9; color: Colors.foreground
     }
-    MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: htopProc.running = true }
+    MouseArea {
+        id: ma; anchors.fill: parent; hoverEnabled: true
+        onClicked: htopProc.running = true
+        onEntered: TooltipState.show(
+            "CPU  " + Math.round(root.cpuPercent) + "%  ·  click for htop",
+            mapToGlobal(0, height / 2).y, root.barScreen)
+        onExited: TooltipState.hide()
+    }
     Process { id: htopProc; command: ["sh", "-c", "ghostty -e htop"] }
     readonly property FileView statFile: FileView { path: "/proc/stat"; watchChanges: false }
     Timer {

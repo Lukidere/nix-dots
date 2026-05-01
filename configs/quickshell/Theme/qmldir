@@ -1,1 +1,3 @@
 singleton Colors 1.0 Colors.qml
+singleton TooltipState 1.0 TooltipState.qml
+singleton PowerState 1.0 PowerState.qml

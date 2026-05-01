@@ -5,7 +5,8 @@
 
 {
   imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
+    [
+      (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
   boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "usb_storage" "usbhid" "sd_mod" ];
@@ -14,7 +15,8 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/mapper/cryptroot";
+    {
+      device = "/dev/mapper/cryptroot";
       fsType = "btrfs";
       options = [ "subvol=@" ];
     };
@@ -22,25 +24,29 @@
   boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/3782a13a-6f99-4bd2-ab32-06ec747715ab";
 
   fileSystems."/home" =
-    { device = "/dev/mapper/cryptroot";
+    {
+      device = "/dev/mapper/cryptroot";
       fsType = "btrfs";
       options = [ "subvol=@home" ];
     };
 
   fileSystems."/nix" =
-    { device = "/dev/mapper/cryptroot";
+    {
+      device = "/dev/mapper/cryptroot";
       fsType = "btrfs";
       options = [ "subvol=@nix" ];
     };
 
   fileSystems."/var/log" =
-    { device = "/dev/mapper/cryptroot";
+    {
+      device = "/dev/mapper/cryptroot";
       fsType = "btrfs";
       options = [ "subvol=@log" ];
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/0624-402D";
+    {
+      device = "/dev/disk/by-uuid/0624-402D";
       fsType = "vfat";
       options = [ "fmask=0022" "dmask=0022" ];
     };

@@ -7,7 +7,7 @@ Item {
     property bool isSharing: false
     Text {
         anchors.centerIn: parent; text: "󰐊"
-        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18; color: Colors.color1
+        font.family: "Iosevka Nerd Font"; font.pixelSize: 18; color: Colors.color1
     }
     readonly property Process pwProc: Process {
         command: ["sh", "-c",

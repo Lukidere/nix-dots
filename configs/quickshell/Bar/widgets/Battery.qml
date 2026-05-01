@@ -4,6 +4,7 @@ import "../../Theme"
 
 Item {
     id: root
+    property var barScreen
     width: 44; height: 44
     property int    pct:    0
     property string status: "Unknown"
@@ -27,7 +28,7 @@ Item {
     Text {
         anchors { centerIn: parent; verticalCenterOffset: -6 }
         text: root.icon
-        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18
+        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
         color: root.batColor
         Behavior on color { ColorAnimation { duration: 300 } }
     }
@@ -35,6 +36,13 @@ Item {
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 5 }
         text: root.ready ? root.pct + "%" : "?"
         font.pixelSize: 9; color: root.batColor
+    }
+    MouseArea {
+        anchors.fill: parent; hoverEnabled: true
+        onEntered: TooltipState.show(
+            (root.ready ? root.pct + "%" : "?") + "  ·  " + root.status,
+            mapToGlobal(0, height / 2).y, root.barScreen)
+        onExited: TooltipState.hide()
     }
     readonly property Process batProc: Process {
         command: ["sh", "-c",

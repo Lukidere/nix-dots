@@ -1,9 +1,4 @@
-if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 -- Customize Treesitter
--- --------------------
--- Treesitter customizations are handled with AstroCore
--- as nvim-treesitter simply provides a download utility for parsers
 
 ---@type LazySpec
 return {
@@ -11,13 +6,19 @@ return {
   ---@type AstroCoreOpts
   opts = {
     treesitter = {
-      highlight = true, -- enable/disable treesitter based highlighting
-      indent = true, -- enable/disable treesitter based indentation
-      auto_install = true, -- enable/disable automatic installation of detected languages
+      highlight = true,
+      indent = true,
+      auto_install = false, -- NixOS: parsers come from Nix, not runtime downloads
       ensure_installed = {
-        "lua",
-        "vim",
-        -- add more arguments for adding more treesitter parsers
+        "lua", "vim", "vimdoc",
+        "rust",
+        "python",
+        "nix",
+        "bash",
+        "javascript", "typescript", "tsx",
+        "json", "yaml", "toml",
+        "markdown", "markdown_inline",
+        "regex",
       },
     },
   },
