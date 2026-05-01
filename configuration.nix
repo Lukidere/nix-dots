@@ -186,6 +186,14 @@ in
     nerd-fonts.jetbrains-mono
     nerd-fonts.iosevka
   ];
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
+  };
 
   # ==========================================
   # 10. System Packages
@@ -280,10 +288,9 @@ in
     virt-viewer
     virtio-win
   ];
-
+  networking.firewall.enable = true;
   # ==========================================
   # 11. System State
   # ==========================================
-  system.copySystemConfiguration = true;
   system.stateVersion = "25.11";
 }
