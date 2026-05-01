@@ -15,14 +15,15 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.exclusiveZone: -1
 
-    property var allApps: []
+    property var    allApps: []
+    property string activeCategory: "All"
+
     Settings {
         id: appUsage
         category: "QuickshellLauncher"
         property string usageData: "{}"
     }
-    // ── FIFO toggle ───────────────────────────────────────────────────────────
-    // Create FIFO, then start reader. Restart reader after each toggle.
+
     readonly property Process _setup: Process {
         command: ["sh", "-c", "rm -f /run/user/1000/qs-launcher; mkfifo /run/user/1000/qs-launcher"]
         running: true
@@ -41,17 +42,18 @@ PanelWindow {
         }
     }
 
-    // ── App loader (Python parses XDG desktop files) ──────────────────────────
     readonly property Process _appLoader: Process {
-        command: ["python3", "/tmp/qs-apps.py"]
+        command: ["sh","-c","python3 ~/.config/quickshell/scripts/qs-apps.py"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
                     root.allApps = JSON.parse(this.text).map(a => ({
                         name: a.n, genericName: a.g || "", icon: a.i || "",
-                        exec: a.e || "", desktopId: a.d
+                        exec: a.e || "", desktopId: a.d,
+                        categories: a.c || []
                     }))
+                    if (root.visible) root.filterApps(searchInput.text)
                 } catch(e) {}
             }
         }
@@ -59,7 +61,9 @@ PanelWindow {
 
     onVisibleChanged: {
         if (visible) {
+            _appLoader.running = false; _appLoader.running = true
             searchInput.text = ""
+            root.activeCategory = "All"
             resultsList.currentIndex = 0
             filterApps("")
             searchInput.forceActiveFocus()
@@ -69,40 +73,35 @@ PanelWindow {
     function filterApps(query) {
         combinedModel.clear()
         const q = query.toLowerCase().trim()
-        
-        // <-- DODANE: Pobranie historii użycia
+
         let usage = {}
         try { usage = JSON.parse(appUsage.usageData || "{}") } catch(e) {}
 
-        // Zbieramy wszystkie pasujące aplikacje
         let hits = q === ""
             ? allApps.slice()
             : allApps.filter(a =>
                 a.name.toLowerCase().includes(q) ||
                 a.genericName.toLowerCase().includes(q)
               )
-              
-        // <-- DODANE: Sortowanie według popularności (malejąco)
-        hits.sort((a, b) => {
-            let countA = usage[a.desktopId] || 0
-            let countB = usage[b.desktopId] || 0
-            return countB - countA
-        })
 
-        // Ucinamy wyniki dopiero po posortowaniu
+        if (root.activeCategory !== "All") {
+            hits = hits.filter(a => (a.categories || []).includes(root.activeCategory))
+        }
+
+        hits.sort((a, b) => (usage[b.desktopId] || 0) - (usage[a.desktopId] || 0))
         hits = hits.slice(0, q === "" ? 8 : 6)
 
         hits.forEach((a, i) => {
             const ic = a.icon
             combinedModel.append({
                 label: a.name, sub: a.genericName,
-                iconSrc: ic.includes("/") ? ic : "image://theme/" + (ic || "application-x-executable"),
+                iconSrc: ic ? (ic.includes("/") ? "file://" + ic : "") : "",
                 kind: "app", appIdx: allApps.indexOf(a),
                 desktopId: a.desktopId,
                 exec: a.exec
             })
         })
-        
+
         if (q.length >= 2) {
             fdProc.running = false
             fdProc.command = ["fd","--max-depth","4","--type","f",q,"/home/dhm"]
@@ -110,18 +109,24 @@ PanelWindow {
         }
         resultsList.currentIndex = 0
     }
+
     function launchItem(idx) {
         if (idx < 0 || idx >= combinedModel.count) return
         const item = combinedModel.get(idx)
-        
+
         if (item.kind === "app") {
-            // <-- DODANE: Aktualizacja licznika kliknięć
             let usage = {}
             try { usage = JSON.parse(appUsage.usageData || "{}") } catch(e) {}
             usage[item.desktopId] = (usage[item.desktopId] || 0) + 1
             appUsage.usageData = JSON.stringify(usage)
-            
-            const exec = item.exec.replace(/%[uUfFdDnNickvm]/g, "").trim()
+
+            const exec = item.exec
+                .replace(/--file-forwarding\s+/g, "")
+                .replace(/@@\w*\s[^@]*@@/g, "")
+                .replace(/%[uUfFdDnNickvm]/g, "")
+                .replace(/\s+--\s*$/g, "")
+                .replace(/\s+/g, " ")
+                .trim()
             launchProc.command = ["sh", "-c", exec + " &"]
             launchProc.running = false; launchProc.running = true
         } else {
@@ -131,24 +136,56 @@ PanelWindow {
         root.visible = false
     }
 
-    // ── Click outside to close ────────────────────────────────────────────────
     MouseArea {
         anchors.fill: parent
         onClicked: root.visible = false
     }
 
-    // ── Launcher box ─────────────────────────────────────────────────────────
     Rectangle {
         anchors.centerIn: parent
-        width: 580; height: 500
+        width: 580; height: 540
         color: Colors.background
         radius: 12
         MouseArea { anchors.fill: parent }
 
         Column {
             anchors { fill: parent; margins: 14 }
-            spacing: 10
+            spacing: 8
 
+            // ── Category chips ────────────────────────────────────────
+            Row {
+                width: parent.width
+                spacing: 4
+                clip: true
+
+                Repeater {
+                    model: ["All","Internet","Dev","Media","Games","System","Office"]
+                    delegate: Rectangle {
+                        height: 24; radius: 12
+                        width: chipLbl.implicitWidth + 18
+                        color: root.activeCategory === modelData ? Colors.color4
+                             : Qt.lighter(Colors.background, 1.35)
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Text {
+                            id: chipLbl
+                            anchors.centerIn: parent
+                            text: modelData
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                            color: root.activeCategory === modelData ? Colors.background : Colors.foreground
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                root.activeCategory = modelData
+                                filterApps(searchInput.text)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Search box ────────────────────────────────────────────
             Rectangle {
                 width: parent.width; height: 46
                 radius: 10
@@ -162,30 +199,31 @@ PanelWindow {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "\uF002"
-                        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 14
                         color: Colors.color8
                     }
                     TextInput {
                         id: searchInput
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 34
-                        font.pixelSize: 14; font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14; font.family: "Iosevka Nerd Font"
                         color: Colors.foreground
                         selectionColor: Colors.color4
                         onTextChanged: filterApps(text)
-                        Keys.onUpPressed:     { resultsList.currentIndex = Math.max(0, resultsList.currentIndex - 1); event.accepted = true }
-                        Keys.onDownPressed:   { resultsList.currentIndex = Math.min(resultsList.count - 1, resultsList.currentIndex + 1); event.accepted = true }
-                        Keys.onReturnPressed: { launchItem(resultsList.currentIndex); event.accepted = true }
-                        Keys.onEnterPressed:  { launchItem(resultsList.currentIndex); event.accepted = true }
-                        Keys.onEscapePressed: { root.visible = false; event.accepted = true }
+                        Keys.onUpPressed:     function(event) { resultsList.currentIndex = Math.max(0, resultsList.currentIndex - 1); event.accepted = true }
+                        Keys.onDownPressed:   function(event) { resultsList.currentIndex = Math.min(resultsList.count - 1, resultsList.currentIndex + 1); event.accepted = true }
+                        Keys.onReturnPressed: function(event) { launchItem(resultsList.currentIndex); event.accepted = true }
+                        Keys.onEnterPressed:  function(event) { launchItem(resultsList.currentIndex); event.accepted = true }
+                        Keys.onEscapePressed: function(event) { root.visible = false; event.accepted = true }
                     }
                 }
             }
 
+            // ── Results ───────────────────────────────────────────────
             ListView {
                 id: resultsList
                 width: parent.width
-                height: parent.height - 56
+                height: parent.height - 24 - 8 - 46 - 8
                 clip: true; model: combinedModel; spacing: 2; currentIndex: 0
                 delegate: Rectangle {
                     required property int index
@@ -200,15 +238,15 @@ PanelWindow {
                         Image {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 28; height: 28; smooth: true; mipmap: true
-                            source: modelData.iconSrc || "image://theme/application-x-executable"
+                            source: modelData.iconSrc || ""
                             fillMode: Image.PreserveAspectFit
-                            onStatusChanged: if (status === Image.Error) source = "image://theme/application-x-executable"
+                            onStatusChanged: if (status === Image.Error) source = ""
                         }
                         Column {
                             anchors.verticalCenter: parent.verticalCenter; spacing: 2
                             Text {
                                 text: modelData.label || ""
-                                font.pixelSize: 13; font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 13; font.family: "Iosevka Nerd Font"
                                 color: resultsList.currentIndex === index ? Colors.background : Colors.foreground
                             }
                             Text {

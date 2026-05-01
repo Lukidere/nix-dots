@@ -1,6 +1,5 @@
 spawn-at-startup "awww-daemon"
 spawn-at-startup "quickshell"
-spawn-at-startup "mako"
 
 // General Settings
 prefer-no-csd
@@ -65,24 +64,10 @@ binds {
     MOD+SHIFT+E                         hotkey-overlay-title="Quit Niri (logout)" { quit; }
     MOD+RETURN                          hotkey-overlay-title="Open Terminal: ghostty" { spawn-sh "ghostty"; }
     MOD+Q                               hotkey-overlay-title="Open Browser: Librewolf" { spawn-sh "librewolf"; }
-    MOD+SHIFT+Q                         hotkey-overlay-title="Lock Screen: gtklock" { spawn-sh "gtklock"; }
     MOD+R                               hotkey-overlay-title="Open App Launcher: quickshell-dhm-launcher" { spawn-sh "echo x > /run/user/1000/qs-launcher"; }
     MOD+E                               hotkey-overlay-title="File Manager: Thunar" { spawn-sh "thunar"; }
-    MOD+ALT+E                           hotkey-overlay-title="File Manager: Yazi" { spawn-sh "yazi"; }
-    MOD+W                               hotkey-overlay-title="Open Wallpaper Selector" { spawn-sh "$HOME/.config/scripts/bgselector.sh"; }
 
     // Media Keys
-    XF86AudioRaiseVolume                allow-when-locked=true { spawn-sh "mediactl volume_up"; }
-    XF86AudioLowerVolume                allow-when-locked=true { spawn-sh "mediactl volume_down"; }
-    XF86MonBrightnessUp                 allow-when-locked=true { spawn-sh "mediactl brightness_up"; }
-    XF86MonBrightnessDown               allow-when-locked=true { spawn-sh "mediactl brightness_down"; }
-    XF86AudioMute                       allow-when-locked=true { spawn-sh "mediactl volume_mute"; }
-    XF86AudioMicMute                    allow-when-locked=true { spawn-sh "mediactl mic_mute"; }
-    XF86AudioNext                       allow-when-locked=true { spawn-sh "mediactl next_track"; }
-    XF86AudioPause                      allow-when-locked=true { spawn-sh "mediactl play_pause"; }
-    XF86AudioPlay                       allow-when-locked=true { spawn-sh "mediactl play_pause"; }
-    XF86AudioPrev                       allow-when-locked=true { spawn-sh "mediactl prev_track"; }
-
     // Window Management
     MOD+SHIFT+C                         { close-window; }
 
@@ -193,14 +178,14 @@ binds {
     MOD+M                               { maximize-column; }
 
     // Utils - Screenshots and color picker
-    MOD+SHIFT+S                         { spawn-sh "grim -g \"$(slurp)\" - | wl-copy"; }
-    ALT+P                               { screenshot; }
+    MOD+SHIFT+S                               { screenshot; }
     MOD+CTRL+S                          { screenshot-window write-to-disk=true; }
     MOD+P                               { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker"; }
 
     // Application Restarts
-    MOD+ALT+W                           { spawn "sh" "-c" "pgrep -x waybar >/dev/null && killall waybar || waybar &"; }
+MOD+ALT+W                           { spawn "sh" "/home/dhm/.config/quickshell/scripts/restart.sh"; }
 }
+
 
 // Layout Settings
 layout {
@@ -261,17 +246,16 @@ animations {
     }
 }
 
-// Window Rules
 window-rule {
-    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    match title=r#"Bitwarden"#
     open-floating true
-}
+ }
 
 window-rule {
-    match app-id=r#"firefox"#
-    match app-id=r#"google-chrome"#
-    match app-id=r#"code"#
+    match app-id=r#"librewolf"#
+    match app-id=r#"vesktop"#
     match app-id=r#"obsidian$"#
+    exclude title=r#"Bitwarden"#
     open-maximized true
 }
 
@@ -349,10 +333,6 @@ window-rule {
     open-floating true
 }
 
-window-rule {
-    match app-id=r#"steam"# title=r#".*(Friends|Settings|Properties).*"#
-    open-floating true
-}
 
 window-rule {
     geometry-corner-radius 0
@@ -366,6 +346,7 @@ window-rule {
 
 // Environment Variables
 environment {
+
     ELECTRON_OZONE_PLATFORM_HINT "auto"
     XDG_SESSION_TYPE "wayland"
     XDG_CURRENT_DESKTOP "niri"

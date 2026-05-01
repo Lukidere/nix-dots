@@ -1,0 +1,17 @@
+singleton DashboardState 1.0 DashboardState.qml
+DashboardWindow 1.0 DashboardWindow.qml
+QuickControls 1.0 QuickControls.qml
+Performance 1.0 Performance.qml
+CalendarWidget 1.0 CalendarWidget.qml
+TriggerStrip 1.0 TriggerStrip.qml
+WallpaperSwitcher 1.0 WallpaperSwitcher.qml
+WallpaperSection 1.0 WallpaperSection.qml
+MediaSection 1.0 MediaSection.qml
+WeatherWidget 1.0 WeatherWidget.qml
+PowerMenu 1.0 PowerMenu.qml
+NotificationCenter 1.0 NotificationCenter.qml
+ClipboardHistory 1.0 ClipboardHistory.qml
+SystemInfo 1.0 SystemInfo.qml
+NetworkPanel 1.0 NetworkPanel.qml
+BluetoothPanel 1.0 BluetoothPanel.qml
+NavidromeClient 1.0 NavidromeClient.qml

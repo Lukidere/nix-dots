@@ -29,7 +29,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: root.muted ? "󰝟" : root.volume>66 ? "󰕾" : root.volume>33 ? "󰖀" : "󰕿"
-            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 18
             color: root.muted ? Colors.color1 : Colors.foreground
             Behavior on color { ColorAnimation { duration: 150 } }
         }
@@ -67,7 +67,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: root.micMuted ? "󰍭" : "󰍬"
-            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 18
             color: root.micMuted ? Colors.color1 : Colors.foreground
             Behavior on color { ColorAnimation { duration: 150 } }
         }

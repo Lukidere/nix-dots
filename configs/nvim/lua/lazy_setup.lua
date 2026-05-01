@@ -15,6 +15,10 @@ require("lazy").setup({
   { import = "plugins" },
 } --[[@as LazySpec]], {
   -- Configure any other `lazy.nvim` configuration options here
+  
+  -- Add this line to write the lockfile outside the read-only Nix store
+  lockfile = vim.fn.stdpath("state") .. "/lazy-lock.json",
+  
   install = { colorscheme = { "astrotheme", "habamax" } },
   ui = { backdrop = 100 },
   performance = {

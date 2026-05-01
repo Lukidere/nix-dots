@@ -7,7 +7,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: "\uF313"
-        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 22
+        font.family: "Iosevka Nerd Font"; font.pixelSize: 22
         color: ma.containsMouse ? Colors.color4 : Colors.foreground
         Behavior on color { ColorAnimation { duration: 150 } }
     }

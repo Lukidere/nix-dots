@@ -1,0 +1,3 @@
+singleton NotifState 1.0 NotifState.qml
+NotifWindow 1.0 NotifWindow.qml
+NotifItem 1.0 NotifItem.qml

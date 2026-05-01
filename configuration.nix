@@ -2,73 +2,100 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{ config
+, lib
+, pkgs
+, inputs
+, ...
+}:
 let
-  unstable = import <nixos-unstable> { };
+  unstable = import inputs.unstable {
+    inherit (pkgs) system;
+    config.allowUnfree = true;
+  };
 in
 {
   imports = [
     ./hardware-configuration.nix
-    <home-manager/nixos>
-    ./home.nix
   ];
 
   # ==========================================
   # 1. Nix & Nixpkgs Settings
   # ==========================================
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "flakes" "nix-command" ];
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 7d";
+  age.secrets."haslo-user".file = ./configs/secrets/haslo-user.age;
+  nix = {
+    settings = {
+      experimental-features = [
+        "flakes"
+        "nix-command"
+      ];
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
   };
 
-  # ==========================================
-  # 2. Bootloader & Kernel
-  # ==========================================
-  boot.loader.systemd-boot.enable = false;
-
-  boot.loader.grub = {
-    enable = true;
-    device = "nodev"; # "nodev" jest wymagane dla instalacji EFI
-    efiSupport = true;
-    useOSProber = true;
+  security = {
+    pam.services.gtklock = { };
+    rtkit.enable = true; # Wymagane dla PipeWire
   };
 
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.blacklistedKernelModules = [ "nouveau" ];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot = {
+    initrd.kernelModules = [
+      "amdgpu"
+    ];
+    kernelParams = [ "nvidia-drm.modeset=1" ];
+    loader = {
+      systemd-boot.enable = false;
+      grub = {
+        enable = true;
+        device = "nodev";
+        efiSupport = true;
+        useOSProber = true;
+      };
+      efi.canTouchEfiVariables = true;
 
+    };
+    blacklistedKernelModules = [ "nouveau" ];
+    kernelPackages = pkgs.linuxPackages_latest;
+  };
   # ==========================================
   # 3. Hardware & Graphics (NVIDIA)
   # ==========================================
-  hardware.graphics.enable = true;
-  services.xserver.videoDrivers = [ "nvidia" ];
+  hardware = {
+    graphics.enable = true;
+    enableRedistributableFirmware = true;
+    firmware = with pkgs; [ linux-firmware ];
 
-  hardware.nvidia = {
-    modesetting.enable = true;
-    powerManagement.enable = false;
-    powerManagement.finegrained = false;
-    open = true;
-    nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    bluetooth.enable = true;
+    nvidia = {
+      modesetting.enable = true;
+      powerManagement.enable = false;
+      powerManagement.finegrained = false;
+      open = true;
+      nvidiaSettings = true;
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
+    };
   };
-
+  services.xserver.videoDrivers = [ "nvidia" ];
+  services.usbmuxd.enable = true;
   services.libinput.enable = true; # Touchpad support
 
   # ==========================================
   # 4. Networking & Time
   # ==========================================
-  networking.hostName = "legion";
-  networking.networkmanager.enable = true;
+  networking = {
+    hostName = "legion";
+    networkmanager.enable = true;
+  };
   time.timeZone = "Europe/Berlin";
 
   # ==========================================
   # 5. Audio, Bluetooth & Multimedia
   # ==========================================
-  security.rtkit.enable = true; # Wymagane dla PipeWire
   services.pulseaudio.enable = false;
 
   services.pipewire = {
@@ -79,7 +106,6 @@ in
     wireplumber.enable = true;
   };
 
-  hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
   # ==========================================
@@ -121,7 +147,7 @@ in
   services.printing.enable = true;
   services.tailscale.enable = true;
   services.flatpak.enable = true;
-
+  services.geoclue2.enable = true;
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
@@ -135,15 +161,16 @@ in
   # 8. Users & Global Programs
   # ==========================================
   programs.fish.enable = true;
-  programs.steam.enable = true;
-  programs.steam.gamescopeSession.enable = true;
-  programs.gamemode.enable = true;
-
   users.users.dhm = {
     shell = pkgs.fish;
     isNormalUser = true;
-    extraGroups = [ "wheel" "libvirtd" "kvm" ];
-    packages = with pkgs; [ tree ];
+    hashedPasswordFile = config.age.secrets."haslo-user".path;
+    extraGroups = [
+      "wheel"
+      "libvirtd"
+      "kvm"
+      "wireshark"
+    ];
   };
 
   # ==========================================
@@ -157,6 +184,7 @@ in
   fonts.packages = with pkgs; [
     fira-code
     nerd-fonts.jetbrains-mono
+    nerd-fonts.iosevka
   ];
 
   # ==========================================
@@ -178,42 +206,59 @@ in
     wget
     wl-clipboard
     zoxide
-
     # --- Terminal & Shell ---
     fish
     foot
     ghostty
     starship
     tuigreet
-
+    ranger
     # --- Desktop, Wayland & WM Tools ---
     quickshell
     fd
-    grim
+    hyprpicker
     brightnessctl
-    mako
     networkmanagerapplet
     qt6.qtwayland
-    rofi
-    slurp
     wallust
-    waybar
     claude-code
+    libnotify
+    geoclue2
+    colloid-icon-theme
+    htop
+    imv
+    mpv
+    gtklock
+    unstable.awww
     # --- Audio & Media ---
     imagemagick
-    pavucontrol # Mikser graficzny dla PipeWire/Waybar
+    gammastep
+    obsidian
+    pavucontrol # Mikser graficzny dla
     playerctl
-    wireplumber # Narzędzie wpctl dla Waybara
+    wireplumber # Narzędzie wpctl
 
     # --- Development & Programming ---
     cargo
     cargo-leptos
     gcc
+    nixd
+    pyright
+    nodePackages.bash-language-server
+    nodePackages.typescript-language-server
+    lua-language-server
+    ruff
+    nixfmt-rfc-style
+    shfmt
+    shellcheck
+    nodePackages.prettier
+    stylua
     neovim
     nodejs_24
     openssl
     pkg-config
     python3
+    bun
     rust-analyzer
     rustc
     trunk
@@ -224,11 +269,9 @@ in
     steam
     libreoffice
     librewolf
+    #hej
     vesktop
     zathura
-    unstable.awww
-    vicinae
-
     # --- Virtualization Tools ---
     spice
     spice-gtk

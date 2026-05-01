@@ -18,7 +18,7 @@ Item {
             const d = event.angleDelta.y > 0 ? 5 : -5
             const v = Math.max(1, Math.min(100, root.brightness + d))
             root.brightness = v
-            setProc.command = ["brightnessctl", "set","-d","amdgpu_bl2", v + "%"]
+            setProc.command = ["brightnessctl", "set","-d","amdgpu_bl1", v + "%"]
             setProc.running = false; setProc.running = true
         }
     }
@@ -27,7 +27,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: root.brightness>66 ? "󰃟" : root.brightness>33 ? "󰃞" : "󰃝"
-            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 18; color: Colors.foreground
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 18; color: Colors.foreground
         }
     }
     Rectangle {
@@ -46,14 +46,14 @@ Item {
             onClicked: mouse => {
                 const v = Math.max(1, Math.round((1 - mouse.y / height) * 100))
                 root.brightness = v
-                setProc.command = ["brightnessctl", "set","-d","amdgpu_bl2", v + "%"]
+                setProc.command = ["brightnessctl", "set","-d","amdgpu_bl1", v + "%"]
                 setProc.running = false; setProc.running = true
             }
         }
     }
     Process { id: setProc; running: false }
     readonly property Process brightProc: Process {
-        command: ["sh","-c","echo $(( $(brightnessctl get -d amdgpu_bl2) * 100 / $(brightnessctl max -d amdgpu_bl2) ))"]
+        command: ["sh","-c","echo $(( $(brightnessctl get -d amdgpu_bl1) * 100 / $(brightnessctl max -d amdgpu_bl1) ))"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
