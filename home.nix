@@ -2,11 +2,6 @@
 {
   home.stateVersion = "25.11";
 
-
-
-
-
-
   xdg.configFile."niri/config.kdl" = {
     source = ./configs/niri/config.kdl;
     force = true;
@@ -48,6 +43,4 @@
 
   };
 
-
-};
 }
