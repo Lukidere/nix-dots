@@ -45,6 +45,7 @@ in
 
   boot = {
     initrd.kernelModules = [
+      "rtw89_8852ce"
       "amdgpu"
     ];
     kernelParams = [ "nvidia-drm.modeset=1" ];
