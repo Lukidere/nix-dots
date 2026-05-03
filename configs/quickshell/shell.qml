@@ -4,6 +4,7 @@ import "./Bar"
 import "./Bar/Dashboard"
 import "./Launcher"
 import "./Notifications"
+import "./OSD"
 
 ShellRoot {
     Variants {
@@ -29,6 +30,10 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         NotifWindow {}
+    }
+    Variants {
+        model: Quickshell.screens
+        OSD {}
     }
     Launcher {}
 }

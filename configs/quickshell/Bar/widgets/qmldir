@@ -10,3 +10,5 @@ AudioGroup 1.0 AudioGroup.qml
 BrightnessGroup 1.0 BrightnessGroup.qml
 Battery 1.0 Battery.qml
 PowerButton 1.0 PowerButton.qml
+ActiveWindow 1.0 ActiveWindow.qml
+NetworkSpeed 1.0 NetworkSpeed.qml

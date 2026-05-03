@@ -10,7 +10,7 @@ Rectangle {
     property string body:     ""
     property int    timeout:  5000
 
-    width: 320; height: bodyText.visible ? 72 : 52
+    width: 320; height: bodyText.visible ? 84 : 64
     radius: 10
     color: Qt.darker(Colors.background, 1.12)
     border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.3)
@@ -67,6 +67,14 @@ Rectangle {
         spacing: 2
 
         Text {
+            width: parent.width
+            text: root.appName
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+            color: Colors.color8
+            elide: Text.ElideRight
+            visible: root.appName !== ""
+        }
+        Text {
             id: summaryText
             width: parent.width
             text: root.summary || root.appName
@@ -102,10 +110,19 @@ Rectangle {
     }
 
     // Slide-in from right
-    transform: Translate { x: root.x > 0 ? 0 : 0 }
+    property real slideX: 360
+    transform: Translate { x: root.slideX }
     opacity: 0
     Component.onCompleted: {
-        opacity = 1
+        slideAnim.start()
+        fadeAnim.start()
     }
-    Behavior on opacity { NumberAnimation { duration: 200 } }
+    NumberAnimation {
+        id: slideAnim; target: root; property: "slideX"
+        from: 360; to: 0; duration: 280; easing.type: Easing.OutCubic
+    }
+    NumberAnimation {
+        id: fadeAnim; target: root; property: "opacity"
+        from: 0; to: 1; duration: 200
+    }
 }

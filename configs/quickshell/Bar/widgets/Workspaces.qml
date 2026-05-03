@@ -11,9 +11,11 @@ Column {
         delegate: Item {
             width: 44; height: 14
             Rectangle {
-                width: 8; height: 8; radius: 4
+                width: modelData.is_focused ? 28 : 8
+                height: 8; radius: 4
                 anchors.centerIn: parent
                 color: modelData.is_focused ? Colors.color4 : Colors.color8
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
             MouseArea {
