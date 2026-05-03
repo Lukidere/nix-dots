@@ -19,32 +19,50 @@ PanelWindow {
 
     color: Colors.background
 
-    Column {
-        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 8 }
-        spacing: 4
-        Cachy {}
-        Clock { barScreen: root.modelData }
-        Cpu { barScreen: root.modelData }
-        Ram { barScreen: root.modelData }
-        Disk { barScreen: root.modelData }
-        NetworkSpeed {}
-    }
+    Item {
+        id: barContent
+        anchors.fill: parent
+        opacity: 0
+        Component.onCompleted: startupAnim.start()
+        NumberAnimation { id: startupAnim; target: barContent; property: "opacity"; from: 0; to: 1; duration: 500; easing.type: Easing.OutCubic }
 
-    Column {
-        anchors { centerIn: parent }
-        spacing: 4
-        Mpris {}
-        Workspaces {}
-        ActiveWindow {}
-        Privacy {}
-    }
+        Column {
+            anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 8 }
+            spacing: 4
+            Cachy {}
+            Clock { barScreen: root.modelData }
+            Cpu { barScreen: root.modelData }
+            Ram { barScreen: root.modelData }
+            Disk { barScreen: root.modelData }
+        }
 
-    Column {
-        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
-        spacing: 4
-        AudioGroup {}
-        BrightnessGroup {}
-        Battery { barScreen: root.modelData }
-        PowerButton { barScreen: root.modelData }
+        Rectangle {
+            anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
+            anchors.verticalCenterOffset: -54
+            width: 20; height: 1; color: Colors.color8; opacity: 0.25
+        }
+        Rectangle {
+            anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
+            anchors.verticalCenterOffset: 54
+            width: 20; height: 1; color: Colors.color8; opacity: 0.25
+        }
+
+        Column {
+            anchors { centerIn: parent }
+            spacing: 4
+            Mpris {}
+            Workspaces {}
+            ActiveWindow { barScreen: root.modelData }
+            Privacy {}
+        }
+
+        Column {
+            anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
+            spacing: 4
+            AudioGroup {}
+            BrightnessGroup {}
+            Battery { barScreen: root.modelData }
+            PowerButton { barScreen: root.modelData }
+        }
     }
 }

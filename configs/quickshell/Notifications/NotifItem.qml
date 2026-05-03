@@ -109,20 +109,26 @@ Rectangle {
         }
     }
 
-    // Slide-in from right
-    property real slideX: 360
+    // Slide-in + scale + fade from right
+    property real slideX: 340
     transform: Translate { x: root.slideX }
     opacity: 0
+    scale: 0.92
     Component.onCompleted: {
         slideAnim.start()
         fadeAnim.start()
+        scaleAnim.start()
     }
     NumberAnimation {
         id: slideAnim; target: root; property: "slideX"
-        from: 360; to: 0; duration: 280; easing.type: Easing.OutCubic
+        from: 340; to: 0; duration: 300; easing.type: Easing.OutCubic
     }
     NumberAnimation {
         id: fadeAnim; target: root; property: "opacity"
-        from: 0; to: 1; duration: 200
+        from: 0; to: 1; duration: 220
+    }
+    NumberAnimation {
+        id: scaleAnim; target: root; property: "scale"
+        from: 0.92; to: 1.0; duration: 300; easing.type: Easing.OutCubic
     }
 }

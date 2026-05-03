@@ -17,6 +17,7 @@ PanelWindow {
 
     property var    allApps: []
     property string activeCategory: "All"
+    readonly property string homeDir: StandardPaths.writableLocation(StandardPaths.HomeLocation)
 
     Settings {
         id: appUsage
@@ -95,16 +96,32 @@ PanelWindow {
             const ic = a.icon
             combinedModel.append({
                 label: a.name, sub: a.genericName,
-                iconSrc: ic ? (ic.includes("/") ? "file://" + ic : "") : "",
+                iconSrc: ic ? (ic.includes("/") ? "file://" + ic : "image://theme/" + ic)
+                           : "image://theme/application-x-executable",
                 kind: "app", appIdx: allApps.indexOf(a),
                 desktopId: a.desktopId,
                 exec: a.exec
             })
         })
 
+        // Calculator mode
+        const mathMatch = q.match(/^[\d\s\+\-\*\/\.\(\)%^]+$/)
+        if (mathMatch && q.match(/[\+\-\*\/]/)) {
+            try {
+                const result = Function('"use strict"; return (' + q + ')')()
+                if (typeof result === 'number' && isFinite(result)) {
+                    combinedModel.insert(0, {
+                        label: "= " + (Number.isInteger(result) ? result : result.toFixed(6).replace(/\.?0+$/, "")),
+                        sub: q, iconSrc: "image://theme/accessories-calculator",
+                        kind: "calc", appIdx: -1, desktopId: "", exec: ""
+                    })
+                }
+            } catch(_) {}
+        }
+
         if (q.length >= 2) {
             fdProc.running = false
-            fdProc.command = ["fd","--max-depth","4","--type","f",q,"/home/dhm"]
+            fdProc.command = ["fd","--max-depth","4","--type","f",q,root.homeDir]
             fdProc.running = true
         }
         resultsList.currentIndex = 0
@@ -114,6 +131,13 @@ PanelWindow {
         if (idx < 0 || idx >= combinedModel.count) return
         const item = combinedModel.get(idx)
 
+        if (item.kind === "calc") {
+            // Copy result to clipboard
+            launchProc.command = ["sh", "-c", "echo -n " + JSON.stringify(item.label.slice(2)) + " | wl-copy"]
+            launchProc.running = false; launchProc.running = true
+            root.visible = false
+            return
+        }
         if (item.kind === "app") {
             let usage = {}
             try { usage = JSON.parse(appUsage.usageData || "{}") } catch(e) {}
@@ -285,7 +309,7 @@ PanelWindow {
                     const name = path.split("/").pop()
                     const ext  = name.includes(".") ? name.split(".").pop().toLowerCase() : ""
                     combinedModel.append({
-                        label: name, sub: path.replace("/home/dhm","~"),
+                        label: name, sub: path.replace(root.homeDir,"~"),
                         iconSrc: "image://theme/" + (iconMap[ext] || (ext ? "text-x-generic" : "folder")),
                         kind: "file", appIdx: -1, filePath: path
                     })

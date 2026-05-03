@@ -114,11 +114,12 @@ Item {
             Repeater {
                 model: ["Mo","Tu","We","Th","Fr","Sa","Su"]
                 Text {
+                    required property int index
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                    color: Colors.color8
+                    color: index >= 5 ? Colors.color5 : Colors.color8
                 }
             }
 
@@ -126,6 +127,8 @@ Item {
                 model: root.calCells(root.viewYear, root.viewMonth,
                            root.isCurrentMonth ? root._now.getDate() : -1)
                 Item {
+                    required property int index
+                    required property var modelData
                     Layout.fillWidth: true
                     Layout.preferredHeight: 20
                     Rectangle {
@@ -137,7 +140,8 @@ Item {
                         anchors.centerIn: parent
                         text: modelData.day > 0 ? modelData.day : ""
                         font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                        color: modelData.isToday ? Colors.background : Colors.foreground
+                        color: modelData.isToday ? Colors.background
+                             : (index % 7 >= 5 ? Colors.color5 : Colors.foreground)
                     }
                 }
             }
