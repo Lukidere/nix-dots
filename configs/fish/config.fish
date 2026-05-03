@@ -135,7 +135,7 @@ end
 ### Aliases    ###
 ##################
 # ls replacements
-alias nixedit='sudoedit ~/dotsy/configuration.nix
+alias nixedit='nvim ~/dotsy/configuration.nix'
 alias nixupdate='sudo nixos-rebuild switch --flake ~/dotsy/#legion'
 alias ls='eza -al --color=always --group-directories-first --icons'
 alias la='eza -a --color=always --group-directories-first --icons'
