@@ -46,6 +46,8 @@ in
   boot = {
     initrd.kernelModules = [
       "rtw89_8852ce"
+      "btusb"
+      "btrtl"
       "amdgpu"
     ];
     kernelParams = [ "nvidia-drm.modeset=1" ];
@@ -225,6 +227,7 @@ in
     # --- Desktop, Wayland & WM Tools ---
     quickshell
     fd
+    bluez
     hyprpicker
     brightnessctl
     networkmanagerapplet
