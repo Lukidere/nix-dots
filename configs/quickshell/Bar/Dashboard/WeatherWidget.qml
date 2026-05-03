@@ -74,6 +74,7 @@ Item {
             "curl -sf 'https://api.open-meteo.com/v1/forecast?latitude=" + root.lat +
             "&longitude=" + root.lon +
             "&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode" +
+            "&hourly=apparent_temperature&forecast_days=1" +
             "&timezone=auto' 2>/dev/null"]
         running: false
         stdout: StdioCollector {
@@ -81,12 +82,17 @@ Item {
                 try {
                     const d = JSON.parse(this.text)
                     const cur = d.current_weather || {}
-                    root.temp      = Math.round(cur.temperature || 0) + "\u00B0C"
-                    root.wIcon     = root.wmoIcon(cur.weathercode)
-                    root.desc      = root.wmoDesc(cur.weathercode)
+                    root.temp  = Math.round(cur.temperature || 0) + "\u00B0C"
+                    root.wIcon = root.wmoIcon(cur.weathercode)
+                    root.desc  = root.wmoDesc(cur.weathercode)
 
-                    // feels like not in open-meteo current_weather, use apparent temp
-                    root.feelsLike = root.temp
+                    // apparent_temperature from hourly data (index = current hour)
+                    const hourly = d.hourly || {}
+                    const apparentTemps = hourly.apparent_temperature || []
+                    const hour = new Date().getHours()
+                    root.feelsLike = apparentTemps[hour] !== undefined
+                        ? Math.round(apparentTemps[hour]) + "\u00B0C"
+                        : root.temp
 
                     // daily forecast
                     const daily = d.daily || {}

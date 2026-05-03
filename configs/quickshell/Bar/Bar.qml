@@ -27,6 +27,7 @@ PanelWindow {
         Cpu { barScreen: root.modelData }
         Ram { barScreen: root.modelData }
         Disk { barScreen: root.modelData }
+        NetworkSpeed {}
     }
 
     Column {
@@ -34,6 +35,7 @@ PanelWindow {
         spacing: 4
         Mpris {}
         Workspaces {}
+        ActiveWindow {}
         Privacy {}
     }
 

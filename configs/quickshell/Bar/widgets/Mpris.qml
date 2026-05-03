@@ -9,10 +9,13 @@ Item {
     property bool isPlaying: false
     property bool expanded: hoverArea.containsMouse
     property string trackInfo: ""
+    property real   trackPos:  0
+    property real   trackLen:  0
 
     // Collapsed: only play/pause visible (44px).
     // Expanded: track info + prev above, next below (152px).
-    height: active ? (expanded ? 152 : 44) : 0
+    // +3px at bottom for progress bar.
+    height: active ? (expanded ? 155 : 47) : 0
     visible: active
     clip: true
     Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.InOutCubic } }
@@ -128,4 +131,38 @@ Item {
     Process { id: prevProc; command: ["playerctl", "previous"];   running: false }
     Process { id: ppProc;   command: ["playerctl", "play-pause"]; running: false }
     Process { id: nextProc; command: ["playerctl", "next"];       running: false }
+
+    // ── Track progress ────────────────────────────────────────────────
+    readonly property Timer _posPoll: Timer {
+        interval: 1000; running: root.active && root.isPlaying; repeat: true
+        onTriggered: { posProc.running = false; posProc.running = true }
+    }
+    Process {
+        id: posProc; running: false
+        command: ["sh", "-c", "playerctl position 2>/dev/null; echo; playerctl metadata mpris:length 2>/dev/null"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n")
+                const pos = parseFloat(lines[0])
+                const len = parseInt(lines[1])
+                if (!isNaN(pos)) root.trackPos = pos
+                if (!isNaN(len) && len > 0) root.trackLen = len / 1000000
+            }
+        }
+    }
+
+    // Thin progress bar at bottom (always visible when active)
+    Rectangle {
+        anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+        height: 3
+        visible: root.active
+        color: Qt.lighter(Colors.background, 1.5)
+        Rectangle {
+            width: root.trackLen > 0
+                ? parent.width * Math.min(1, root.trackPos / root.trackLen)
+                : 0
+            height: 3; color: Colors.color4
+            Behavior on width { NumberAnimation { duration: 800 } }
+        }
+    }
 }
