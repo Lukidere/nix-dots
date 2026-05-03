@@ -106,6 +106,18 @@ Item {
 
             Item {
                 width: parent.width; height: 90
+                // Glow ring — pulses when playing
+                Rectangle {
+                    width: 88; height: 88; radius: 12
+                    anchors { left: parent.left; leftMargin: -4; verticalCenter: parent.verticalCenter }
+                    color: "transparent"
+                    border.width: 2
+                    border.color: root.mpStatus === "Playing"
+                        ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.55)
+                        : "transparent"
+                    Behavior on border.color { ColorAnimation { duration: 600 } }
+                }
+
                 Rectangle {
                     id: artRect
                     width: 80; height: 80

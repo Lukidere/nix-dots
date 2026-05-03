@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Io
 import "../../Theme"
+import "../../Notifications"
 
 Item {
     id: root
@@ -19,12 +20,21 @@ Item {
     property string btDevice:   ""
     property bool   eyeHealth:  false
 
+    // Poll-lock flags: ignore poll results for a few seconds after a manual toggle
+    property bool _lockAudio: false
+    property bool _lockNet:   false
+    property bool _lockBt:    false
+    Timer { id: _audioLock; interval: 3000; onTriggered: root._lockAudio = false }
+    Timer { id: _netLock;   interval: 6000; onTriggered: root._lockNet   = false }
+    Timer { id: _btLock;    interval: 6000; onTriggered: root._lockBt    = false }
+
     // ── Audio ─────────────────────────────────────────────────────────────
     readonly property Process _audioProc: Process {
         command: ["sh","-c","wpctl get-volume @DEFAULT_AUDIO_SINK@ && wpctl get-volume @DEFAULT_AUDIO_SOURCE@"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
+                if (root._lockAudio) return
                 const lines = this.text.trim().split("\n")
                 if (lines[0]) {
                     const m = lines[0].match(/Volume: ([\d.]+)/)
@@ -60,6 +70,7 @@ Item {
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
+                if (root._lockNet) return
                 const parts = this.text.split("---\n")
                 const lines = (parts[0] || "").trim().split("\n")
                 let found = false
@@ -86,6 +97,7 @@ Item {
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
+                if (root._lockBt) return
                 root.btOn   = /Powered: yes/.test(this.text)
                 root.btConn = /Connected: yes/.test(this.text)
                 const m = this.text.match(/Device [0-9A-F:]+ (.+)/)
@@ -197,11 +209,20 @@ Item {
                             color: root.micMuted ? Colors.background : Colors.color6
                         }
                         MouseArea { anchors.fill: parent
-                            onClicked: { root.micMuted=!root.micMuted; _micToggle.running=false; _micToggle.running=true } }
+                            onClicked: {
+                                root.micMuted = !root.micMuted
+                                root._lockAudio = true; _audioLock.restart()
+                                _micToggle.running = false; _micToggle.running = true
+                            }
+                        }
                     }
                     TogglePill {
                         active: !root.muted
-                        onToggled: { root.muted=!root.muted; _muteToggle.running=false; _muteToggle.running=true }
+                        onToggled: {
+                            root.muted = !root.muted
+                            root._lockAudio = true; _audioLock.restart()
+                            _muteToggle.running = false; _muteToggle.running = true
+                        }
                     }
                 }
             }
@@ -209,6 +230,7 @@ Item {
                 width: parent.width; value: root.volume
                 onMoved: function(v) {
                     root.volume = v
+                    root._lockAudio = true; _audioLock.restart()
                     _volSet.command = ["wpctl","set-volume","@DEFAULT_AUDIO_SINK@",(v/100).toFixed(2)]
                     _volSet.running = false; _volSet.running = true
                 }
@@ -261,6 +283,7 @@ Item {
                     active: root.wifiOn
                     onToggled: {
                         root.wifiOn = !root.wifiOn
+                        root._lockNet = true; _netLock.restart()
                         _wifiToggle.command = root.wifiOn ? ["rfkill","unblock","wifi"] : ["rfkill","block","wifi"]
                         _wifiToggle.running = false; _wifiToggle.running = true
                     }
@@ -292,6 +315,7 @@ Item {
                     active: root.btOn
                     onToggled: {
                         root.btOn = !root.btOn; root.btConn = false; root.btDevice = ""
+                        root._lockBt = true; _btLock.restart()
                         _btToggle.command = root.btOn ? ["rfkill","unblock","bluetooth"] : ["rfkill","block","bluetooth"]
                         _btToggle.running = false; _btToggle.running = true
                     }
@@ -331,6 +355,23 @@ Item {
                 text: "Auto night light"
                 font.family: "Iosevka Nerd Font"; font.pixelSize: 10
                 color: Colors.color6
+            }
+        }
+
+        // Do Not Disturb
+        Item {
+            width: parent.width; height: 18
+            Text {
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "\u{F1F6}  Do Not Disturb"
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 13
+                color: NotifState.dnd ? Colors.color1 : Colors.foreground
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+            TogglePill {
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                active: NotifState.dnd
+                onToggled: NotifState.dnd = !NotifState.dnd
             }
         }
     }

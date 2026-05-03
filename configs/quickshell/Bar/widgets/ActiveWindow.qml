@@ -9,7 +9,9 @@ Item {
     clip: true
     Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
+    property var    barScreen
     property string windowTitle: ""
+    property string windowFullId: ""
 
     readonly property Process _proc: Process {
         command: ["niri", "msg", "-j", "focused-window"]
@@ -20,9 +22,10 @@ Item {
                     const w = JSON.parse(this.text)
                     if (!w || !w.app_id) { root.windowTitle = ""; return }
                     const id = w.app_id
+                    root.windowFullId = id
                     // Use last segment of reverse-domain (e.g. com.mitchellh.ghostty → ghostty)
                     root.windowTitle = id.includes(".") ? id.split(".").pop() : id
-                } catch(e) { root.windowTitle = "" }
+                } catch(e) { root.windowTitle = ""; root.windowFullId = "" }
             }
         }
     }
@@ -40,5 +43,12 @@ Item {
         width: 72
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
+    }
+
+    MouseArea {
+        anchors.fill: parent; hoverEnabled: true
+        onEntered: if (root.windowFullId !== "")
+            TooltipState.show(root.windowFullId, mapToGlobal(0, height / 2).y, root.barScreen)
+        onExited: TooltipState.hide()
     }
 }

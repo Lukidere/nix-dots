@@ -2,31 +2,71 @@ import QtQuick
 import Quickshell.Io
 import "../../Theme"
 
-Column {
+Item {
     id: root
-    spacing: 2
+    width: 44
+    implicitHeight: wsColumn.implicitHeight
     property var workspaces: []
-    Repeater {
-        model: root.workspaces
-        delegate: Item {
-            width: 44; height: 14
-            Rectangle {
-                width: modelData.is_focused ? 28 : 8
-                height: 8; radius: 4
-                anchors.centerIn: parent
-                color: modelData.is_focused ? Colors.color4 : Colors.color8
-                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: 150 } }
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    focusProc.command = ["niri","msg","action","focus-workspace",String(modelData.idx)]
-                    focusProc.running = false; focusProc.running = true
+
+    // Static background dots
+    Column {
+        id: wsColumn
+        spacing: 2
+
+        Repeater {
+            model: root.workspaces
+            delegate: Item {
+                width: 44; height: 14
+                Rectangle {
+                    width: 8; height: 8; radius: 4
+                    anchors.centerIn: parent
+                    color: Colors.color8
+                    opacity: 0.45
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        focusProc.command = ["niri","msg","action","focus-workspace",String(modelData.idx)]
+                        focusProc.running = false; focusProc.running = true
+                    }
+                }
+                WheelHandler {
+                    onWheel: function(e) {
+                        const cmd = e.angleDelta.y > 0 ? "focus-workspace-up" : "focus-workspace-down"
+                        focusProc.command = ["niri","msg","action",cmd]
+                        focusProc.running = false; focusProc.running = true
+                    }
                 }
             }
         }
     }
+
+    // Sliding active pill — glides vertically to the focused workspace
+    Rectangle {
+        id: activePill
+        property int focusedIndex: {
+            for (let i = 0; i < root.workspaces.length; i++)
+                if (root.workspaces[i].is_focused) return i
+            return -1
+        }
+        visible: focusedIndex >= 0
+        // slot = item height (14) + spacing (2) = 16; pill (h8) centering offset = 3
+        y: focusedIndex >= 0 ? focusedIndex * 16 + 3 : 0
+        x: (44 - 28) / 2
+        width: 28; height: 8; radius: 4
+        color: Colors.color4
+        Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+
+        // Soft glow halo behind the pill
+        Rectangle {
+            anchors.centerIn: parent
+            width: 36; height: 14; radius: 7
+            color: Colors.color4
+            opacity: 0.18
+            z: -1
+        }
+    }
+
     Process { id: focusProc; running: false }
     readonly property Process wsProc: Process {
         command: ["niri", "msg", "-j", "workspaces"]

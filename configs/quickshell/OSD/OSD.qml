@@ -3,24 +3,33 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import "../Theme"
+import "../Notifications"
 
 PanelWindow {
     id: root
     required property var modelData
     screen: modelData
 
-    anchors { left: true; right: true; bottom: true }
-    implicitHeight: 96
+    anchors { left: true; right: true; top: true; bottom: true }
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
+    visible: _windowVisible
 
     // ── State ────────────────────────────────────────────────────────
     property string osdType:    ""   // "volume" | "brightness"
     property int    osdValue:   0
     property bool   osdMuted:   false
     property bool   osdVisible: false
+    property bool   _windowVisible: false
+
+    // Keep window alive long enough for the 180ms fade-out to finish
+    Timer { id: _closeTimer; interval: 300; onTriggered: root._windowVisible = false }
+    onOsdVisibleChanged: {
+        if (osdVisible) { _closeTimer.stop(); _windowVisible = true }
+        else _closeTimer.restart()
+    }
 
     property int  _lastVol:    -1
     property bool _lastMuted:  false
@@ -37,7 +46,8 @@ PanelWindow {
                 if (!m) return
                 const v     = Math.round(parseFloat(m[1]) * 100)
                 const muted = line.includes("[MUTED]")
-                if (root._lastVol >= 0 && (v !== root._lastVol || muted !== root._lastMuted)) {
+                if (root._lastVol >= 0 && (v !== root._lastVol || muted !== root._lastMuted)
+                        && root.modelData.name === NotifState.focusedScreen) {
                     root.osdType    = "volume"
                     root.osdValue   = v
                     root.osdMuted   = muted
@@ -63,7 +73,8 @@ PanelWindow {
             onStreamFinished: {
                 const v = parseInt(this.text.trim())
                 if (isNaN(v)) return
-                if (root._lastBright >= 0 && v !== root._lastBright) {
+                if (root._lastBright >= 0 && v !== root._lastBright
+                        && root.modelData.name === NotifState.focusedScreen) {
                     root.osdType    = "brightness"
                     root.osdValue   = v
                     root.osdMuted   = false

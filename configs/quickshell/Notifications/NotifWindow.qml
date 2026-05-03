@@ -7,7 +7,7 @@ PanelWindow {
     id: root
     required property var modelData
     screen: modelData
-    visible: NotifState.items.length > 0 && modelData.name === NotifState.focusedScreen
+    visible: root.items.length > 0
     color: "transparent"
     anchors { right: true; top: true }
     implicitWidth: 340
@@ -16,11 +16,16 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
 
+    // Only show notifications that were spawned while this screen was focused
     property var items: []
 
     Connections {
         target: NotifState
-        function onChanged() { root.items = NotifState.items.slice() }
+        function onChanged() {
+            root.items = NotifState.items.filter(
+                function(i) { return i.screen === root.modelData.name }
+            )
+        }
     }
 
     Column {
