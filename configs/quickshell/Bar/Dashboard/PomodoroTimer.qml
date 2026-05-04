@@ -36,13 +36,71 @@ Item {
         width: parent.width
         spacing: 14
 
-        // Timer display
-        Text {
+        // Circular arc ring with time display centred inside
+        Item {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: root.formatTime(root.secondsLeft)
-            font.family: "Iosevka Nerd Font"; font.pixelSize: 40; font.bold: true
-            color: root.session === 0 ? Colors.color4 : Colors.color2
-            Behavior on color { ColorAnimation { duration: 300 } }
+            width: 164; height: 164
+
+            Canvas {
+                id: ring
+                anchors.fill: parent
+
+                onPaint: {
+                    const ctx = getContext("2d")
+                    ctx.clearRect(0, 0, width, height)
+                    const cx = width / 2, cy = height / 2, r = 70
+                    const totalSecs = root.session === 0
+                        ? root.workMinutes * 60 : root.breakMinutes * 60
+                    const fraction = totalSecs > 0
+                        ? Math.max(0, Math.min(1, root.secondsLeft / totalSecs))
+                        : 1
+
+                    // Background track
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                    ctx.strokeStyle = Qt.lighter(Colors.background, 1.5).toString()
+                    ctx.lineWidth = 9
+                    ctx.stroke()
+
+                    // Progress arc (clockwise from top)
+                    if (fraction > 0) {
+                        ctx.beginPath()
+                        const start = -Math.PI / 2
+                        ctx.arc(cx, cy, r, start, start + fraction * Math.PI * 2)
+                        ctx.strokeStyle = root.session === 0
+                            ? Colors.color4.toString()
+                            : Colors.color2.toString()
+                        ctx.lineWidth = 9
+                        ctx.lineCap = "round"
+                        ctx.stroke()
+                    }
+                }
+
+                Connections {
+                    target: root
+                    function onSecondsLeftChanged() { ring.requestPaint() }
+                    function onSessionChanged()     { ring.requestPaint() }
+                }
+            }
+
+            // Time + phase label centred inside the ring
+            Column {
+                anchors.centerIn: parent
+                spacing: 2
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.formatTime(root.secondsLeft)
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 28; font.bold: true
+                    color: root.session === 0 ? Colors.color4 : Colors.color2
+                    Behavior on color { ColorAnimation { duration: 300 } }
+                }
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.session === 0 ? "WORK" : "BREAK"
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 9; font.bold: true
+                    color: Colors.color8
+                }
+            }
         }
 
         // Session label
@@ -51,23 +109,6 @@ Item {
             text: root.session === 0 ? "\uF017  Work" : "\uF0F4  Break"
             font.family: "Iosevka Nerd Font"; font.pixelSize: 11
             color: Colors.color8
-        }
-
-        // Progress bar
-        Rectangle {
-            width: parent.width; height: 4; radius: 2
-            color: Qt.lighter(Colors.background, 1.4)
-            Rectangle {
-                property int totalSecs: root.session === 0
-                    ? root.workMinutes * 60 : root.breakMinutes * 60
-                width: totalSecs > 0
-                    ? parent.width * (1 - root.secondsLeft / totalSecs)
-                    : 0
-                height: 4; radius: 2
-                color: root.session === 0 ? Colors.color4 : Colors.color2
-                Behavior on width { NumberAnimation { duration: 800 } }
-                Behavior on color { ColorAnimation { duration: 300 } }
-            }
         }
 
         // Controls

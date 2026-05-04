@@ -7,6 +7,9 @@ Item {
 
     property int mode: 0  // 0 = MPRIS, 1 = Navidrome
 
+    // Exposed for ambient-art consumers in DashboardWindow
+    property string artUrl: root.mpArtUrl
+
     // ── MPRIS state ─────────────────────────────────────────────────
     property string mpStatus:   "Stopped"
     property string mpTitle:    "Nothing playing"

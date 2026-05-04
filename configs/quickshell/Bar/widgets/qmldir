@@ -3,6 +3,7 @@ Clock 1.0 Clock.qml
 Cpu 1.0 Cpu.qml
 Ram 1.0 Ram.qml
 Disk 1.0 Disk.qml
+SysTray 1.0 SysTray.qml
 Mpris 1.0 Mpris.qml
 Workspaces 1.0 Workspaces.qml
 Privacy 1.0 Privacy.qml
