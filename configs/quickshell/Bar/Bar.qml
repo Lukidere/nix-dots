@@ -51,8 +51,6 @@ PanelWindow {
             Mpris {}
             Workspaces { barScreen: root.modelData }
             ActiveWindow { barScreen: root.modelData }
-            Privacy {}
-            SysTray { barScreen: root.modelData }
         }
 
         Column {

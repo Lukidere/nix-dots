@@ -2,8 +2,6 @@ import QtQuick
 import Quickshell.Io
 import "../../Theme"
 
-// Merged CPU + RAM + Disk in one compact widget (~57px vs ~148px for three separate).
-// Hover shows all three values; click opens htop.
 Item {
     id: root
     property var barScreen
@@ -109,15 +107,6 @@ Item {
                 text: Math.round(root.cpuPct) + "%"
                 font.pixelSize: 8; color: Colors.color6
             }
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 6; rightMargin: 6 }
-                height: 2; radius: 1; color: Qt.lighter(Colors.background, 1.5)
-                Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, root.cpuPct / 100))
-                    height: 2; radius: 1; color: cpuRow.barClr
-                    Behavior on width { NumberAnimation { duration: 600 } }
-                }
-            }
         }
 
         // RAM row
@@ -138,15 +127,6 @@ Item {
                 text: Math.round(root.ramPct) + "%"
                 font.pixelSize: 8; color: Colors.color6
             }
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 6; rightMargin: 6 }
-                height: 2; radius: 1; color: Qt.lighter(Colors.background, 1.5)
-                Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, root.ramPct / 100))
-                    height: 2; radius: 1; color: ramRow.barClr
-                    Behavior on width { NumberAnimation { duration: 600 } }
-                }
-            }
         }
 
         // Disk row
@@ -166,15 +146,6 @@ Item {
                 anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
                 text: Math.round(root.diskPct) + "%"
                 font.pixelSize: 8; color: Colors.color6
-            }
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 6; rightMargin: 6 }
-                height: 2; radius: 1; color: Qt.lighter(Colors.background, 1.5)
-                Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, root.diskPct / 100))
-                    height: 2; radius: 1; color: diskRow.barClr
-                    Behavior on width { NumberAnimation { duration: 600 } }
-                }
             }
         }
     }
