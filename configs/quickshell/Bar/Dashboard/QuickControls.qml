@@ -24,9 +24,11 @@ Item {
     property bool _lockAudio: false
     property bool _lockNet:   false
     property bool _lockBt:    false
+    property bool _lockEye:   false
     Timer { id: _audioLock; interval: 3000; onTriggered: root._lockAudio = false }
     Timer { id: _netLock;   interval: 6000; onTriggered: root._lockNet   = false }
     Timer { id: _btLock;    interval: 6000; onTriggered: root._lockBt    = false }
+    Timer { id: _eyeLock;   interval: 4000; onTriggered: root._lockEye   = false }
 
     // ── Audio ─────────────────────────────────────────────────────────────
     readonly property Process _audioProc: Process {
@@ -65,26 +67,28 @@ Item {
     // ── Network ───────────────────────────────────────────────────────────
     readonly property Process _netProc: Process {
         command: ["sh","-c",
-            "nmcli -t -f TYPE,STATE,CONNECTION device; echo ---;" +
+            "nmcli -t -f TYPE,STATE,CONNECTION device status; echo ===;" +
+            "nmcli radio wifi 2>/dev/null; echo ===;" +
             "hostname -I 2>/dev/null | awk '{print $1}'"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 if (root._lockNet) return
-                const parts = this.text.split("---\n")
+                const parts = this.text.split("===\n")
                 const lines = (parts[0] || "").trim().split("\n")
-                let found = false
+                // wifi radio state is independent of whether ethernet is active
+                root.wifiOn = (parts[1] || "").trim().toLowerCase() === "enabled"
+                root.wifiIP = (parts[2] || "").trim()
+
+                let wifiConn = "", etherConn = false
                 for (const line of lines) {
                     const p = line.split(":")
-                    if (p[1] === "connected") {
-                        root.wifiName = p[2] || ""
-                        root.connType = p[0] === "ethernet" ? "ethernet" : "wifi"
-                        root.wifiOn   = true
-                        found = true; break
-                    }
+                    const type = p[0], state = p[1], conn = p[2] || ""
+                    if (type === "wifi"     && state === "connected") wifiConn = conn
+                    if (type === "ethernet" && state === "connected") etherConn = true
                 }
-                if (!found) { root.wifiName = ""; root.connType = ""; root.wifiOn = false }
-                root.wifiIP = (parts[1] || "").trim()
+                root.connType = etherConn ? "ethernet" : wifiConn ? "wifi" : ""
+                root.wifiName = wifiConn
             }
         }
     }
@@ -120,7 +124,7 @@ Item {
         command: ["sh", "-c", "pgrep -f '[g]ammastep'"]
         running: true
         stdout: StdioCollector {
-            onStreamFinished: root.eyeHealth = this.text.trim() !== ""
+            onStreamFinished: { if (!root._lockEye) root.eyeHealth = this.text.trim() !== "" }
         }
     }
     Timer { interval: 5000; running: true; repeat: true
@@ -265,55 +269,90 @@ Item {
             }
         }
 
-        // Network
-        Column {
-            width: parent.width; spacing: 3
-            Item {
-                width: parent.width; height: 18
-                Text {
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                    text: (root.connType === "ethernet" ? "\u{F0200}" : root.wifiOn ? "\u{F0928}" : "\u{F092D}") +
-                          "  " + (root.wifiName !== "" ? root.wifiName : (root.wifiOn ? "Connected" : "Disconnected"))
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                    color: root.wifiName !== "" ? Colors.foreground : Colors.color6
-                    elide: Text.ElideRight; width: parent.width - 48
+        // Toggle card grid: WiFi · Bluetooth · Eye Health · DND
+        Grid {
+            width: parent.width
+            columns: 2
+            columnSpacing: 8; rowSpacing: 8
+
+            // ── WiFi card ─────────────────────────────────────────
+            Rectangle {
+                width: (parent.width - 8) / 2; height: 68; radius: 10
+                color: root.wifiOn
+                    ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.13)
+                    : Qt.lighter(Colors.background, 1.25)
+                Behavior on color { ColorAnimation { duration: 150 } }
+                border.color: root.wifiOn
+                    ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.4)
+                    : "transparent"
+                border.width: 1
+                Column {
+                    anchors { left: parent.left; top: parent.top; margins: 10 }
+                    spacing: 3
+                    Text {
+                        text: root.connType === "ethernet" ? "\u{F0200}" : root.wifiOn ? "\u{F0928}" : "\u{F092D}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: root.wifiOn ? Colors.color4 : Colors.color8
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                    Text {
+                        text: root.wifiName !== "" ? root.wifiName : (root.wifiOn ? "Connected" : "Off")
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                        color: Colors.color6; elide: Text.ElideRight; width: 80
+                    }
                 }
-                TogglePill {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    active: root.wifiOn
-                    onToggled: {
+                Rectangle {
+                    anchors { right: parent.right; top: parent.top; margins: 8 }
+                    width: 7; height: 7; radius: 4
+                    color: root.wifiOn ? Colors.color2 : Qt.lighter(Colors.background, 1.6)
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
                         root.wifiOn = !root.wifiOn
                         root._lockNet = true; _netLock.restart()
-                        _wifiToggle.command = root.wifiOn ? ["rfkill","unblock","wifi"] : ["rfkill","block","wifi"]
+                        _wifiToggle.command = ["nmcli","radio","wifi", root.wifiOn ? "on" : "off"]
                         _wifiToggle.running = false; _wifiToggle.running = true
                     }
                 }
             }
-            Text {
-                visible: root.wifiIP !== ""
-                text: root.wifiIP
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                color: Colors.color6
-            }
-        }
 
-        // Bluetooth
-        Column {
-            width: parent.width; spacing: 3
-            Item {
-                width: parent.width; height: 18
-                Text {
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                    text: (root.btOn ? (root.btConn ? "\u{F00B1}" : "\u{F00AF}") : "\u{F00B2}") +
-                          "  " + (root.btDevice !== "" ? root.btDevice : "Bluetooth")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                    color: root.btOn ? Colors.foreground : Colors.color6
-                    elide: Text.ElideRight; width: parent.width - 48
+            // ── Bluetooth card ────────────────────────────────────
+            Rectangle {
+                width: (parent.width - 8) / 2; height: 68; radius: 10
+                color: root.btOn
+                    ? Qt.rgba(Colors.color5.r, Colors.color5.g, Colors.color5.b, 0.13)
+                    : Qt.lighter(Colors.background, 1.25)
+                Behavior on color { ColorAnimation { duration: 150 } }
+                border.color: root.btOn
+                    ? Qt.rgba(Colors.color5.r, Colors.color5.g, Colors.color5.b, 0.4)
+                    : "transparent"
+                border.width: 1
+                Column {
+                    anchors { left: parent.left; top: parent.top; margins: 10 }
+                    spacing: 3
+                    Text {
+                        text: root.btOn ? (root.btConn ? "\u{F00B1}" : "\u{F00AF}") : "\u{F00B2}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: root.btOn ? Colors.color5 : Colors.color8
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                    Text {
+                        text: root.btDevice !== "" ? root.btDevice : "Bluetooth"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                        color: Colors.color6; elide: Text.ElideRight; width: 80
+                    }
                 }
-                TogglePill {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    active: root.btOn
-                    onToggled: {
+                Rectangle {
+                    anchors { right: parent.right; top: parent.top; margins: 8 }
+                    width: 7; height: 7; radius: 4
+                    color: root.btOn ? Colors.color2 : Qt.lighter(Colors.background, 1.6)
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
                         root.btOn = !root.btOn; root.btConn = false; root.btDevice = ""
                         root._lockBt = true; _btLock.restart()
                         _btToggle.command = root.btOn ? ["rfkill","unblock","bluetooth"] : ["rfkill","block","bluetooth"]
@@ -321,57 +360,86 @@ Item {
                     }
                 }
             }
-            Text {
-                visible: root.btDevice !== ""
-                text: "Connected"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                color: Colors.color6
-            }
-        }
 
-        // Eye Health
-        Column {
-            width: parent.width; spacing: 3
-            Item {
-                width: parent.width; height: 18
-                Text {
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                    text: "\u{F0290}  Eye Health"
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                    color: root.eyeHealth ? Colors.color3 : Colors.foreground
+            // ── Eye Health card ───────────────────────────────────
+            Rectangle {
+                width: (parent.width - 8) / 2; height: 68; radius: 10
+                color: root.eyeHealth
+                    ? Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.13)
+                    : Qt.lighter(Colors.background, 1.25)
+                Behavior on color { ColorAnimation { duration: 150 } }
+                border.color: root.eyeHealth
+                    ? Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.4)
+                    : "transparent"
+                border.width: 1
+                Column {
+                    anchors { left: parent.left; top: parent.top; margins: 10 }
+                    spacing: 3
+                    Text {
+                        text: "\u{F0290}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: root.eyeHealth ? Colors.color3 : Colors.color8
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                    Text {
+                        text: root.eyeHealth ? "Night light" : "Eye Health"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                        color: Colors.color6
+                    }
                 }
-                TogglePill {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    active: root.eyeHealth
-                    onToggled: {
+                Rectangle {
+                    anchors { right: parent.right; top: parent.top; margins: 8 }
+                    width: 7; height: 7; radius: 4
+                    color: root.eyeHealth ? Colors.color2 : Qt.lighter(Colors.background, 1.6)
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
                         root.eyeHealth = !root.eyeHealth
+                        root._lockEye = true; _eyeLock.restart()
                         if (root.eyeHealth) { _eyeOn.running = false; _eyeOn.running = true }
                         else { _eyeOff.running = false; _eyeOff.running = true }
                     }
                 }
             }
-            Text {
-                visible: root.eyeHealth
-                text: "Auto night light"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                color: Colors.color6
-            }
-        }
 
-        // Do Not Disturb
-        Item {
-            width: parent.width; height: 18
-            Text {
-                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                text: "\u{F1F6}  Do Not Disturb"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                color: NotifState.dnd ? Colors.color1 : Colors.foreground
+            // ── Do Not Disturb card ───────────────────────────────
+            Rectangle {
+                width: (parent.width - 8) / 2; height: 68; radius: 10
+                color: NotifState.dnd
+                    ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.13)
+                    : Qt.lighter(Colors.background, 1.25)
                 Behavior on color { ColorAnimation { duration: 150 } }
-            }
-            TogglePill {
-                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                active: NotifState.dnd
-                onToggled: NotifState.dnd = !NotifState.dnd
+                border.color: NotifState.dnd
+                    ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.4)
+                    : "transparent"
+                border.width: 1
+                Column {
+                    anchors { left: parent.left; top: parent.top; margins: 10 }
+                    spacing: 3
+                    Text {
+                        text: "\u{F1F6}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: NotifState.dnd ? Colors.color1 : Colors.color8
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                    Text {
+                        text: "Do Not Disturb"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                        color: Colors.color6
+                    }
+                }
+                Rectangle {
+                    anchors { right: parent.right; top: parent.top; margins: 8 }
+                    width: 7; height: 7; radius: 4
+                    color: NotifState.dnd ? Colors.color1 : Qt.lighter(Colors.background, 1.6)
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: NotifState.dnd = !NotifState.dnd
+                }
             }
         }
     }

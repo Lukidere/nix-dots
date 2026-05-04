@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell.Io
 import "../../Theme"
 
-// Merged CPU + RAM + Disk in one compact widget (~57px vs ~148px for three separate).
-// Hover shows all three values; click opens htop.
+// Merged CPU + RAM + Disk — replaces three separate 44x44 widgets.
+// Three compact rows (icon + % + 2px bar) totalling ~57px.
 Item {
     id: root
     property var barScreen
@@ -13,12 +13,12 @@ Item {
     // CPU
     property real cpuPct:   0
     property var  _cpuPrev: null
-    readonly property FileView statFile: FileView { path: "/proc/stat"; watchChanges: false }
+    readonly property FileView _statFile: FileView { path: "/proc/stat"; watchChanges: false }
     Timer {
         interval: 2000; running: true; repeat: true
         onTriggered: {
-            root.statFile.reload()
-            const t = root.statFile.text()
+            root._statFile.reload()
+            const t = root._statFile.text()
             if (!t) return
             const parts = t.split("\n")[0].split(/\s+/).slice(1).map(Number)
             const idle  = parts[3] + parts[4]
@@ -35,12 +35,12 @@ Item {
     // RAM
     property real   ramPct:   0
     property string ramLabel: ""
-    readonly property FileView memFile: FileView { path: "/proc/meminfo"; watchChanges: false }
+    readonly property FileView _memFile: FileView { path: "/proc/meminfo"; watchChanges: false }
     Timer {
         interval: 3000; running: true; repeat: true
         onTriggered: {
-            root.memFile.reload()
-            const t = root.memFile.text()
+            root._memFile.reload()
+            const t = root._memFile.text()
             if (!t) return
             const total = parseInt(t.match(/MemTotal:\s+(\d+)/)?.[1] || 0)
             const avail = parseInt(t.match(/MemAvailable:\s+(\d+)/)?.[1] || 0)
@@ -53,7 +53,7 @@ Item {
     // Disk
     property real   diskPct:   0
     property string diskLabel: ""
-    readonly property Process dfProc: Process {
+    readonly property Process _dfProc: Process {
         command: ["df", "-BG", "/home", "--output=size,used"]
         running: true
         stdout: StdioCollector {
@@ -72,7 +72,7 @@ Item {
     }
     Timer {
         interval: 30000; running: true; repeat: true
-        onTriggered: { root.dfProc.running = false; root.dfProc.running = true }
+        onTriggered: { root._dfProc.running = false; root._dfProc.running = true }
     }
 
     Process { id: htopProc; command: ["sh", "-c", "ghostty -e htop"]; running: false }
@@ -99,7 +99,7 @@ Item {
                                  : root.cpuPct > 50 ? Colors.color3 : Colors.color2
             Text {
                 anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\uF85A"
+                text: "\uF4BC"
                 font.family: "Iosevka Nerd Font"; font.pixelSize: 13
                 color: ma.containsMouse ? Colors.color4 : cpuRow.barClr
                 Behavior on color { ColorAnimation { duration: 200 } }
@@ -128,7 +128,7 @@ Item {
                                  : root.ramPct > 50 ? Colors.color3 : Colors.color4
             Text {
                 anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\uF2DB"
+                text: "\uF85A"
                 font.family: "Iosevka Nerd Font"; font.pixelSize: 13
                 color: ma.containsMouse ? Colors.color4 : ramRow.barClr
                 Behavior on color { ColorAnimation { duration: 200 } }

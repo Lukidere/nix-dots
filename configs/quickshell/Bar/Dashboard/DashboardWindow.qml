@@ -33,7 +33,8 @@ PanelWindow {
 
         Rectangle {
             id: panel
-            x: 10; y: 8
+            x: 10
+            y: DashboardState.activeScreenName === root.modelData.name ? 8 : -14
             width: hoverWrapper.panelW; height: 700
             radius: 14
             color: Qt.darker(Colors.background, 1.07)
@@ -42,29 +43,66 @@ PanelWindow {
             opacity: DashboardState.activeScreenName === root.modelData.name ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
             property int activeTab: 0
 
-            // ── Header: clock + date ──────────────────────────────────
+            // ── Header: greeting + clock + date + power ───────────────
             Item {
                 id: headerBar
                 anchors { left: parent.left; right: parent.right; top: parent.top }
                 anchors { leftMargin: 18; rightMargin: 18; topMargin: 14 }
-                height: 36
+                height: 56
 
+                // Greeting (top-left)
+                Text {
+                    id: greetingText
+                    anchors { left: parent.left; top: parent.top }
+                    text: {
+                        const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                        return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                    }
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                    color: Colors.color8
+                    Timer { interval: 60000; running: true; repeat: true
+                            onTriggered: {
+                                const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                                greetingText.text = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                            }
+                    }
+                }
+
+                // Power button (top-right)
+                Text {
+                    id: pwrBtn
+                    anchors { right: parent.right; top: parent.top }
+                    text: "\uF011"
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
+                    color: pwrMa.containsMouse ? Colors.color1 : Colors.color8
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    MouseArea {
+                        id: pwrMa
+                        anchors { fill: parent; margins: -6 }
+                        hoverEnabled: true
+                    }
+                }
+
+                // Large time (bottom-left)
                 Text {
                     id: headerTime
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; bottom: parent.bottom }
                     text: Qt.formatTime(new Date(), "hh:mm")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 20; font.bold: true
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 24; font.bold: true
                     color: Colors.foreground
                     Timer { interval: 10000; running: true; repeat: true
                             onTriggered: headerTime.text = Qt.formatTime(new Date(), "hh:mm") }
                 }
+
+                // Date (bottom-right)
                 Text {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    text: Qt.formatDate(new Date(), "ddd d MMM")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                    anchors { right: parent.right; bottom: parent.bottom }
+                    text: Qt.formatDate(new Date(), "ddd, d MMM yyyy")
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
                     color: Colors.color8
                 }
             }
@@ -92,17 +130,28 @@ PanelWindow {
                         required property int    index
                         required property string modelData
                         width: (tabRow.width - 28) / 8
-                        height: 36; radius: 8
+                        height: 44; radius: 8
                         color: tabBtnMa.containsMouse && panel.activeTab !== index
                              ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.1)
                              : "transparent"
                         Behavior on color { ColorAnimation { duration: 150 } }
-                        Text {
+                        Column {
                             anchors.centerIn: parent
-                            text: parent.modelData
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 15
-                            color: panel.activeTab === index ? Colors.color4 : Colors.color8
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            spacing: 1
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: parent.parent.modelData
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 14
+                                color: panel.activeTab === parent.parent.index ? Colors.color4 : Colors.color8
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: (["ctrl","media","cal","wall","notif","sys","pomo","todo"])[parent.parent.index]
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 7
+                                color: panel.activeTab === parent.parent.index ? Colors.color4 : Colors.color6
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
                         }
                         MouseArea {
                             id: tabBtnMa; anchors.fill: parent; hoverEnabled: true
@@ -162,11 +211,37 @@ PanelWindow {
                 }
 
                 // Tab 1 — Media player
-                MediaSection {
+                Item {
                     anchors.fill: parent
                     opacity: panel.activeTab === 1 ? 1 : 0
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 140 } }
+
+                    // Ambient album-art tint behind media content
+                    Image {
+                        anchors { left: parent.left; right: parent.right; top: parent.top }
+                        height: 110
+                        source: mediaSection.artUrl
+                        fillMode: Image.PreserveAspectCrop
+                        opacity: 0.13
+                        smooth: true; mipmap: true; asynchronous: true
+                        visible: status === Image.Ready
+                        // Fade to panel background at the bottom
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                            height: parent.height
+                            gradient: Gradient {
+                                orientation: Gradient.Vertical
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 1.0; color: Qt.darker(Colors.background, 1.07) }
+                            }
+                        }
+                    }
+
+                    MediaSection {
+                        id: mediaSection
+                        anchors.fill: parent
+                    }
                 }
 
                 // Tab 2 — Calendar + Weather

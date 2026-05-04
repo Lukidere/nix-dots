@@ -32,8 +32,6 @@ PanelWindow {
             Cachy {}
             Clock { barScreen: root.modelData }
             Cpu { barScreen: root.modelData }
-            Ram { barScreen: root.modelData }
-            Disk { barScreen: root.modelData }
         }
 
         Rectangle {
@@ -51,9 +49,10 @@ PanelWindow {
             anchors { centerIn: parent }
             spacing: 4
             Mpris {}
-            Workspaces {}
+            Workspaces { barScreen: root.modelData }
             ActiveWindow { barScreen: root.modelData }
             Privacy {}
+            SysTray { barScreen: root.modelData }
         }
 
         Column {

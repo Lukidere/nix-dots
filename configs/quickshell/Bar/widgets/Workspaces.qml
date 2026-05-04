@@ -6,6 +6,7 @@ Item {
     id: root
     width: 44
     implicitHeight: wsColumn.implicitHeight
+    property var barScreen
     property var workspaces: []
 
     // Static background dots
@@ -75,9 +76,15 @@ Item {
             onStreamFinished: {
                 try {
                     let ws = JSON.parse(this.text)
-                    const focused = ws.find(w => w.is_focused)
-                    const out = focused ? focused.output : (ws[0] ? ws[0].output : null)
-                    if (out) ws = ws.filter(w => w.output === out)
+                    const screenName = root.barScreen ? root.barScreen.name : null
+                    if (screenName) {
+                        ws = ws.filter(w => w.output === screenName)
+                    } else {
+                        // fallback: show focused screen's workspaces
+                        const focused = ws.find(w => w.is_focused)
+                        const out = focused ? focused.output : (ws[0] ? ws[0].output : null)
+                        if (out) ws = ws.filter(w => w.output === out)
+                    }
                     ws.sort((a, b) => a.idx - b.idx)
                     while (ws.length < 2) ws.push({ idx: ws.length + 1, is_focused: false })
                     root.workspaces = ws
