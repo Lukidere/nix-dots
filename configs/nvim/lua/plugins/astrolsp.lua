@@ -59,7 +59,9 @@ return {
       pyright = { cmd = { "pyright-langserver", "--stdio" } },
       ts_ls = { cmd = { "typescript-language-server", "--stdio" } },
     },
-    handlers = {},
+    handlers = {
+      rnix = false, -- disabled: using nixd instead (astrocommunity.pack.nix enables rnix by default)
+    },
     autocmds = {
       lsp_codelens_refresh = {
         cond = "textDocument/codeLens",

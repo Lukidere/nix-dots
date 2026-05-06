@@ -181,7 +181,12 @@ Item {
                         }
                         MouseArea {
                             id: ctrlMa; anchors.fill: parent; hoverEnabled: true
-                            onClicked: { const p = index === 0 ? prevProc : index === 1 ? playProc : nextProc; p.running = false; p.running = true }
+                            onClicked: {
+                                const p = index === 0 ? prevProc : index === 1 ? playProc : nextProc
+                                if (index === 1)
+                                    root.mpStatus = root.mpStatus === "Playing" ? "Paused" : "Playing"
+                                p.running = false; p.running = true
+                            }
                         }
                     }
                 }

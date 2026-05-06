@@ -6,6 +6,7 @@ Item {
     id: root
     property var barScreen
     width: 44; height: 44
+    property bool   menuOpen: false
     property int    pct:    0
     property string status: "Unknown"
     property bool   ready:  false
@@ -39,6 +40,7 @@ Item {
     }
     MouseArea {
         anchors.fill: parent; hoverEnabled: true
+        onClicked: root.menuOpen = !root.menuOpen
         onEntered: TooltipState.show(
             (root.ready ? root.pct + "%" : "?") + "  ·  " + root.status,
             mapToGlobal(0, height / 2).y, root.barScreen)
