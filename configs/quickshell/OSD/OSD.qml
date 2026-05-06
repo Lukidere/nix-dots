@@ -4,6 +4,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import "../Theme"
 import "../Notifications"
+import "../Bar/Dashboard"
 
 PanelWindow {
     id: root
@@ -47,7 +48,8 @@ PanelWindow {
                 const v     = Math.round(parseFloat(m[1]) * 100)
                 const muted = line.includes("[MUTED]")
                 if (root._lastVol >= 0 && (v !== root._lastVol || muted !== root._lastMuted)
-                        && root.modelData.name === NotifState.focusedScreen) {
+                        && root.modelData.name === NotifState.focusedScreen
+                        && DashboardState.volPanelScreen !== root.modelData.name) {
                     root.osdType    = "volume"
                     root.osdValue   = v
                     root.osdMuted   = muted
@@ -74,7 +76,8 @@ PanelWindow {
                 const v = parseInt(this.text.trim())
                 if (isNaN(v)) return
                 if (root._lastBright >= 0 && v !== root._lastBright
-                        && root.modelData.name === NotifState.focusedScreen) {
+                        && root.modelData.name === NotifState.focusedScreen
+                        && DashboardState.volPanelScreen !== root.modelData.name) {
                     root.osdType    = "brightness"
                     root.osdValue   = v
                     root.osdMuted   = false

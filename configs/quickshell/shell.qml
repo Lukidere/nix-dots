@@ -21,6 +21,10 @@ ShellRoot {
     }
     Variants {
         model: Quickshell.screens
+        TriggerStrip { isBottom: true }
+    }
+    Variants {
+        model: Quickshell.screens
         TooltipOverlay {}
     }
     Variants {

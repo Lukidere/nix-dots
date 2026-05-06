@@ -7,12 +7,155 @@ PanelWindow {
     id: root
     required property var modelData
     screen: modelData
-    visible: DashboardState.activeScreenName === root.modelData.name
+    visible: DashboardState.activeScreenName === root.modelData.name || DashboardState.volPanelScreen === root.modelData.name
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: panel.activeTab === 7 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: panel.activeTab === 5 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
+
+    // ── Horizontal slider (used by volume panel) ──────────────────────────
+    component HSlider: Item {
+        id: hs
+        height: 20
+        signal moved(int v)
+        property int   value:  0
+        property color accent: Colors.color4
+
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+            height: 4; radius: 2
+            color: Qt.lighter(Colors.background, 1.5)
+            Rectangle {
+                width: parent.width * Math.max(0, Math.min(1, hs.value / 100))
+                height: 4; radius: 2; color: hs.accent
+                Behavior on width { NumberAnimation { duration: 80 } }
+            }
+        }
+        Rectangle {
+            x: Math.max(0, (hs.width - 12) * Math.max(0, Math.min(1, hs.value / 100)))
+            y: 4; width: 12; height: 12; radius: 6
+            color: hs.accent
+        }
+        MouseArea {
+            anchors.fill: parent
+            function calc(mx) { return Math.max(0, Math.min(100, Math.round(mx / width * 100))) }
+            onPressed:         hs.moved(calc(mouseX))
+            onPositionChanged: if (pressed) hs.moved(calc(mouseX))
+        }
+    }
+
+    // ── Bottom volume/brightness panel ────────────────────────────────────
+    Item {
+        id: volPanelArea
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom }
+        width: Math.min(420, Math.max(340, Math.round(parent.width * 0.22))) + 40
+        height: volPanelRect.height + 20
+
+        HoverHandler {
+            onHoveredChanged: {
+                if (hovered && DashboardState.activeScreenName !== root.modelData.name)
+                    DashboardState.showVolPanel(root.modelData.name)
+                else if (!hovered)
+                    DashboardState.scheduleHideVolPanel()
+            }
+        }
+
+        Rectangle {
+            id: volPanelRect
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }
+            width: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
+            height: 124
+            radius: 14
+            color: Qt.darker(Colors.background, 1.07)
+            border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
+            border.width: 1
+            opacity: DashboardState.volPanelScreen === root.modelData.name ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+
+            Column {
+                anchors {
+                    left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter
+                    leftMargin: 16; rightMargin: 16
+                }
+                spacing: 14
+
+                // Volume
+                Column {
+                    width: parent.width; spacing: 6
+                    Item {
+                        width: parent.width; height: 18
+                        Text {
+                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                            text: (quickControls.muted ? "\u{F075F}"
+                                : quickControls.volume > 66 ? "\u{F057E}"
+                                : quickControls.volume > 33 ? "\u{F0580}" : "\u{F057F}") + "  Volume"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12
+                            color: quickControls.muted ? Colors.color1 : Colors.foreground
+                        }
+                        Row {
+                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                            spacing: 8
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: quickControls.muted ? "MUTED" : quickControls.volume + "%"
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                                color: quickControls.muted ? Colors.color1 : Colors.color6
+                            }
+                            // Mic mute button — only affects microphone
+                            Rectangle {
+                                width: 24; height: 16; radius: 8
+                                color: quickControls.micMuted
+                                    ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3)
+                                    : Qt.lighter(Colors.background, 1.5)
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: quickControls.micMuted ? "\u{F036D}" : "\u{F036C}"
+                                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                                    color: quickControls.micMuted ? Colors.color1 : Colors.color6
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: quickControls.toggleMicMute()
+                                }
+                            }
+                        }
+                    }
+                    HSlider {
+                        width: parent.width; value: quickControls.volume
+                        onMoved: function(v) { quickControls.setVolume(v) }
+                    }
+                }
+
+                // Brightness
+                Column {
+                    width: parent.width; spacing: 6
+                    Item {
+                        width: parent.width; height: 18
+                        Text {
+                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                            text: (quickControls.brightness > 66 ? "\u{F00DF}"
+                                : quickControls.brightness > 33 ? "\u{F00DE}" : "\u{F00DD}") + "  Brightness"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12
+                            color: Colors.foreground
+                        }
+                        Text {
+                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                            text: quickControls.brightness + "%"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                            color: Colors.color6
+                        }
+                    }
+                    HSlider {
+                        width: parent.width; value: quickControls.brightness
+                        accent: Colors.color3
+                        onMoved: function(v) { quickControls.setBrightness(v) }
+                    }
+                }
+            }
+        }
+    }
 
     // Hover wrapper — sized to panel + small buffer above/around
     Item {
@@ -72,21 +215,6 @@ PanelWindow {
                     }
                 }
 
-                // Power button (top-right)
-                Text {
-                    id: pwrBtn
-                    anchors { right: parent.right; top: parent.top }
-                    text: "\uF011"
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                    color: pwrMa.containsMouse ? Colors.color1 : Colors.color8
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                    MouseArea {
-                        id: pwrMa
-                        anchors { fill: parent; margins: -6 }
-                        hoverEnabled: true
-                    }
-                }
-
                 // Large time (bottom-left)
                 Text {
                     id: headerTime
@@ -125,11 +253,11 @@ PanelWindow {
                 spacing: 4
 
                 Repeater {
-                    model: ["\uF200", "\uF001", "\uF073", "\uF03E", "\uF0A2", "\uF085", "\uF253", "\uF0AE"]
+                    model: ["\uF200", "\uF001", "\uF03E", "\uF0A2", "\uF085", "\uF253"]
                     delegate: Rectangle {
                         required property int    index
                         required property string modelData
-                        width: (tabRow.width - 28) / 8
+                        width: (tabRow.width - 20) / 6
                         height: 44; radius: 8
                         color: tabBtnMa.containsMouse && panel.activeTab !== index
                              ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.1)
@@ -147,7 +275,7 @@ PanelWindow {
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: (["ctrl","media","cal","wall","notif","sys","pomo","todo"])[parent.parent.index]
+                                text: (["ctrl","media","wall","notif","sys","pomo"])[parent.parent.index]
                                 font.family: "Iosevka Nerd Font"; font.pixelSize: 7
                                 color: panel.activeTab === parent.parent.index ? Colors.color4 : Colors.color6
                                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -163,7 +291,7 @@ PanelWindow {
 
             // Sliding active-tab underline
             Rectangle {
-                property real tabW: (tabRow.width - 28) / 8
+                property real tabW: (tabRow.width - 20) / 6
                 x: tabRow.x + panel.activeTab * (tabW + 4)
                 y: tabRow.y + tabRow.height - 2
                 width: tabW; height: 2; radius: 1
@@ -182,7 +310,7 @@ PanelWindow {
                 }
                 clip: true
 
-                // Tab 0 — Controls + Performance
+                // Tab 0 — Controls
                 Item {
                     anchors.fill: parent
                     opacity: panel.activeTab === 0 ? 1 : 0
@@ -197,16 +325,7 @@ PanelWindow {
                             Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color4; anchors.verticalCenter: parent.verticalCenter }
                             Text { text: "CONTROLS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
                         }
-                        QuickControls { width: parent.width }
-
-                        Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-
-                        Row {
-                            spacing: 6
-                            Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color2; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "PERFORMANCE"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                        }
-                        Performance { width: parent.width }
+                        QuickControls { id: quickControls; width: parent.width }
                     }
                 }
 
@@ -244,34 +363,18 @@ PanelWindow {
                     }
                 }
 
-                // Tab 2 — Calendar + Weather
-                Item {
+                // Tab 2 — Wallpaper chooser
+                WallpaperSection {
                     anchors.fill: parent
                     opacity: panel.activeTab === 2 ? 1 : 0
                     visible: opacity > 0
-                    clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
-                    Column {
-                        width: parent.width; spacing: 12
-
-                        WeatherWidget { width: parent.width }
-                        Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-                        CalendarWidget { width: parent.width }
-                    }
-                }
-
-                // Tab 3 — Wallpaper chooser
-                WallpaperSection {
-                    anchors.fill: parent
-                    opacity: panel.activeTab === 3 ? 1 : 0
-                    visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 140 } }
                 }
 
-                // Tab 4 — Notifications + Clipboard
+                // Tab 3 — Notifications + Clipboard
                 Item {
                     anchors.fill: parent
-                    opacity: panel.activeTab === 4 ? 1 : 0
+                    opacity: panel.activeTab === 3 ? 1 : 0
                     visible: opacity > 0
                     clip: true
                     Behavior on opacity { NumberAnimation { duration: 140 } }
@@ -292,10 +395,10 @@ PanelWindow {
                     }
                 }
 
-                // Tab 5 — System Info + Network + Bluetooth
+                // Tab 4 — System Info + Network + Bluetooth
                 Item {
                     anchors.fill: parent
-                    opacity: panel.activeTab === 5 ? 1 : 0
+                    opacity: panel.activeTab === 4 ? 1 : 0
                     visible: opacity > 0
                     clip: true
                     Behavior on opacity { NumberAnimation { duration: 140 } }
@@ -318,65 +421,49 @@ PanelWindow {
 
                             Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
 
-                            NetworkPanel { width: parent.width }
+                            Row {
+                                spacing: 6
+                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color2; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: "PERFORMANCE"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                            }
+                            Performance { width: parent.width }
+                        }
+                    }
+                }
+
+                // Tab 5 — Pomodoro + Tasks
+                Item {
+                    anchors.fill: parent
+                    opacity: panel.activeTab === 5 ? 1 : 0
+                    visible: opacity > 0
+                    clip: true
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
+
+                    Flickable {
+                        anchors.fill: parent
+                        contentHeight: pomoTaskCol.implicitHeight
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        Column {
+                            id: pomoTaskCol
+                            width: parent.width; spacing: 10
+
+                            Row {
+                                spacing: 6
+                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color1; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: "POMODORO"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                            }
+                            PomodoroTimer { width: parent.width }
 
                             Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
 
-                            BluetoothPanel { width: parent.width }
-                        }
-                    }
-                }
-
-                // Tab 6 — Pomodoro timer
-                Item {
-                    anchors.fill: parent
-                    opacity: panel.activeTab === 6 ? 1 : 0
-                    visible: opacity > 0
-                    clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
-
-                    Column {
-                        anchors { top: parent.top; left: parent.left; right: parent.right; topMargin: 20 }
-                        spacing: 10
-
-                        Row {
-                            spacing: 6
-                            Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color1; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "POMODORO"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                        }
-                        PomodoroTimer { width: parent.width }
-                    }
-                }
-
-                // Tab 7 — Todo list
-                Item {
-                    anchors.fill: parent
-                    opacity: panel.activeTab === 7 ? 1 : 0
-                    visible: opacity > 0
-                    clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
-
-                    Column {
-                        anchors { top: parent.top; left: parent.left; right: parent.right }
-                        spacing: 10
-
-                        Row {
-                            spacing: 6
-                            Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color5; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "TASKS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                        }
-
-                        Flickable {
-                            width: parent.width
-                            height: contentArea.height - 24
-                            contentHeight: todoInner.implicitHeight
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
-
-                            TodoList {
-                                id: todoInner
-                                width: parent.width
+                            Row {
+                                spacing: 6
+                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color5; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: "TASKS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
                             }
+                            TodoList { width: parent.width }
                         }
                     }
                 }

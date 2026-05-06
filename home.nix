@@ -1,5 +1,33 @@
 { config, pkgs, ... }:
 {
+  home.packages = with pkgs; [
+    #---- CLI ----#
+    bottom
+    curl
+    eza
+    fastfetch
+    findutils
+    git
+    jq
+    unzip
+    wget
+    zoxide
+    #---- SHELL ----#
+    ranger
+    fish
+    ghostty
+    foot
+    starship
+    tuigreet
+    # --- Applications ---
+    brave
+    steam
+    libreoffice
+    librewolf
+    vesktop
+    zathura
+
+  ];
   home.stateVersion = "25.11";
 
   xdg.configFile."niri/config.kdl" = {

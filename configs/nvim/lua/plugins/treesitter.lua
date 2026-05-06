@@ -1,5 +1,11 @@
 -- Customize Treesitter
 
+-- Add Nix-provided treesitter grammars to runtimepath
+local nix_ts_path = vim.env.NVIM_TREESITTER_PATH
+if nix_ts_path and nix_ts_path ~= "" then
+  vim.opt.runtimepath:append(nix_ts_path)
+end
+
 ---@type LazySpec
 return {
   "AstroNvim/astrocore",
@@ -8,18 +14,8 @@ return {
     treesitter = {
       highlight = true,
       indent = true,
-      auto_install = false, -- NixOS: parsers come from Nix, not runtime downloads
-      ensure_installed = {
-        "lua", "vim", "vimdoc",
-        "rust",
-        "python",
-        "nix",
-        "bash",
-        "javascript", "typescript", "tsx",
-        "json", "yaml", "toml",
-        "markdown", "markdown_inline",
-        "regex",
-      },
+      auto_install = false,
+      ensure_installed = {},
     },
   },
 }

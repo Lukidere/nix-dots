@@ -12,5 +12,5 @@ Item {
         Behavior on color { ColorAnimation { duration: 150 } }
     }
     MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: terminal.running = true }
-    Process { id: terminal; command: ["sh", "-c", "ghostty || kitty"] }
+    Process { id: terminal; command: ["sh", "-c", "ghostty -e fastfetch && fish"] }
 }

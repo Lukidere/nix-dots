@@ -2,17 +2,19 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config
-, lib
-, pkgs
-, inputs
-, ...
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
 }:
 let
   unstable = import inputs.unstable {
     inherit (pkgs) system;
     config.allowUnfree = true;
   };
+  treesitterGrammars = pkgs.vimPlugins.nvim-treesitter.withAllGrammars;
 in
 {
   imports = [
@@ -74,6 +76,7 @@ in
     firmware = with pkgs; [ linux-firmware ];
 
     bluetooth.enable = true;
+    bluetooth.powerOnBoot = true;
     nvidia = {
       modesetting.enable = true;
       powerManagement.enable = false;
@@ -86,6 +89,7 @@ in
   services.xserver.videoDrivers = [ "nvidia" ];
   services.usbmuxd.enable = true;
   services.libinput.enable = true; # Touchpad support
+  services.power-profiles-daemon.enable = true;
 
   # ==========================================
   # 4. Networking & Time
@@ -172,6 +176,7 @@ in
       "wheel"
       "libvirtd"
       "kvm"
+      "video"
       "wireshark"
     ];
   };
@@ -182,6 +187,7 @@ in
   environment.variables = {
     EDITOR = "/run/current-system/sw/bin/nvim";
     RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+    NVIM_TREESITTER_PATH = "${treesitterGrammars}";
   };
 
   fonts.packages = with pkgs; [
@@ -191,11 +197,11 @@ in
   ];
   services.openssh = {
     enable = true;
-    # settings = {
-    #   PasswordAuthentication = false;
-    #   KbdInteractiveAuthentication = false;
-    #   PermitRootLogin = "no";
-    # };
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
   };
 
   # ==========================================
@@ -203,27 +209,11 @@ in
   # ==========================================
   environment.systemPackages = with pkgs; [
     # --- System & CLI Utilities ---
-    bottom
     cifs-utils
     coreutils
-    curl
-    eza
-    fastfetch
-    findutils
-    git
-    jq
     psmisc
-    unzip
     wget
     wl-clipboard
-    zoxide
-    # --- Terminal & Shell ---
-    fish
-    foot
-    ghostty
-    starship
-    tuigreet
-    ranger
     # --- Desktop, Wayland & WM Tools ---
     quickshell
     fd
@@ -260,6 +250,7 @@ in
     nodePackages.typescript-language-server
     lua-language-server
     ruff
+    deadnix
     nixfmt-rfc-style
     shfmt
     shellcheck
@@ -276,14 +267,6 @@ in
     trunk
     wasm-bindgen-cli
 
-    # --- Applications ---
-    brave
-    steam
-    libreoffice
-    librewolf
-    #hej
-    vesktop
-    zathura
     # --- Virtualization Tools ---
     spice
     spice-gtk
@@ -293,6 +276,7 @@ in
     virtio-win
   ];
   networking.firewall.enable = true;
+
   # ==========================================
   # 11. System State
   # ==========================================

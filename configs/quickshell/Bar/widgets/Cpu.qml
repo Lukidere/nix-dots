@@ -117,7 +117,7 @@ Item {
                                  : root.ramPct > 50 ? Colors.color3 : Colors.color4
             Text {
                 anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\uF2DB"
+                text: "\u{F035B}"
                 font.family: "Iosevka Nerd Font"; font.pixelSize: 13
                 color: ma.containsMouse ? Colors.color4 : ramRow.barClr
                 Behavior on color { ColorAnimation { duration: 200 } }

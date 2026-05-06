@@ -74,7 +74,7 @@ Item {
             "curl -sf 'https://api.open-meteo.com/v1/forecast?latitude=" + root.lat +
             "&longitude=" + root.lon +
             "&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode" +
-            "&hourly=apparent_temperature&forecast_days=1" +
+            "&hourly=apparent_temperature&forecast_days=7" +
             "&timezone=auto' 2>/dev/null"]
         running: false
         stdout: StdioCollector {
