@@ -30,6 +30,8 @@ return {
         shiftwidth = 2,
         expandtab = true,
         colorcolumn = "100",
+        autoindent = true,
+        smartindent = true,
       },
       g = {},
     },
