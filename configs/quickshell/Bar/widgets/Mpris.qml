@@ -1,16 +1,15 @@
 import QtQuick
-import Quickshell.Io
 import "../../Theme"
 
 Item {
     id: root
     width: 44
-    property bool active: false
-    property bool isPlaying: false
-    property bool expanded: hoverArea.containsMouse
-    property string trackInfo: ""
-    property real   trackPos:  0
-    property real   trackLen:  0
+    readonly property bool   active:    MprisState.active
+    readonly property bool   isPlaying: MprisState.playing
+    readonly property string trackInfo: MprisState.artist !== ""
+        ? MprisState.artist + " - " + MprisState.title : MprisState.title
+    readonly property real   trackPos:  MprisState.position
+    readonly property real   trackLen:  MprisState.duration
 
     // Collapsed: only play/pause visible (44px).
     // Expanded: track info + prev above, next below (152px).
@@ -27,6 +26,8 @@ Item {
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
     }
+
+    property bool expanded: hoverArea.containsMouse
 
     // ── Track info ────────────────────────────────────────────────────
     Text {
@@ -53,7 +54,7 @@ Item {
         }
         MouseArea {
             id: prevMa; anchors.fill: parent; hoverEnabled: true
-            onClicked: { prevProc.running = false; prevProc.running = true }
+            onClicked: MprisState.previous()
         }
     }
 
@@ -72,7 +73,7 @@ Item {
         }
         MouseArea {
             id: ppMa; anchors.fill: parent; hoverEnabled: true
-            onClicked: { ppProc.running = false; ppProc.running = true }
+            onClicked: MprisState.playPause()
         }
     }
 
@@ -90,68 +91,11 @@ Item {
         }
         MouseArea {
             id: nextMa; anchors.fill: parent; hoverEnabled: true
-            onClicked: { nextProc.running = false; nextProc.running = true }
+            onClicked: MprisState.next()
         }
     }
-
-    // ── Polling ───────────────────────────────────────────────────────
-    Component.onCompleted: { statusProc.running = false; statusProc.running = true }
-
-    readonly property Timer _statusPoll: Timer {
-        interval: 500; running: true; repeat: true
-        onTriggered: { statusProc.running = false; statusProc.running = true }
-    }
-    readonly property Timer _trackPoll: Timer {
-        interval: 2000; running: true; repeat: true
-        onTriggered: { if (root.active) { trackProc.running = false; trackProc.running = true } }
-    }
-
-    Process {
-        id: statusProc; running: false
-        command: ["playerctl", "status"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const s = this.text.trim()
-                root.active    = (s === "Playing" || s === "Paused")
-                root.isPlaying = (s === "Playing")
-            }
-        }
-    }
-    Process {
-        id: trackProc; running: false
-        command: ["sh", "-c", "playerctl metadata --format '{{artist}} - {{title}}' 2>/dev/null"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const s = this.text.trim()
-                if (s && s !== " - " && s !== "-") root.trackInfo = s
-            }
-        }
-    }
-
-    Process { id: prevProc; command: ["playerctl", "previous"];   running: false }
-    Process { id: ppProc;   command: ["playerctl", "play-pause"]; running: false }
-    Process { id: nextProc; command: ["playerctl", "next"];       running: false }
 
     // ── Track progress ────────────────────────────────────────────────
-    readonly property Timer _posPoll: Timer {
-        interval: 1000; running: root.active && root.isPlaying; repeat: true
-        onTriggered: { posProc.running = false; posProc.running = true }
-    }
-    Process {
-        id: posProc; running: false
-        command: ["sh", "-c", "playerctl position 2>/dev/null; echo; playerctl metadata mpris:length 2>/dev/null"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const lines = this.text.trim().split("\n")
-                const pos = parseFloat(lines[0])
-                const len = parseInt(lines[1])
-                if (!isNaN(pos)) root.trackPos = pos
-                if (!isNaN(len) && len > 0) root.trackLen = len / 1000000
-            }
-        }
-    }
-
-    // Thin progress bar at bottom (always visible when active)
     Rectangle {
         anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
         height: 3

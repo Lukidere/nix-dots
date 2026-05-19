@@ -85,14 +85,23 @@ Item {
                     border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.15)
                     border.width: 1
 
-                    Image {
+                    Item {
                         id: nIcon
                         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         width: 24; height: 24
-                        source: entry.appIcon.includes("/") ? "file://" + entry.appIcon
-                              : "image://theme/" + (entry.appIcon || "dialog-information")
-                        fillMode: Image.PreserveAspectFit; smooth: true
-                        onStatusChanged: if (status === Image.Error) source = "image://theme/dialog-information"
+                        Image {
+                            anchors.fill: parent
+                            source: entry.appIcon && entry.appIcon.includes("/") ? "file://" + entry.appIcon : ""
+                            fillMode: Image.PreserveAspectFit; smooth: true
+                            visible: status === Image.Ready
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\u{F0F3}"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 16
+                            color: Colors.color4
+                            visible: !(entry.appIcon && entry.appIcon.includes("/"))
+                        }
                     }
 
                     Column {

@@ -10,7 +10,7 @@ PanelWindow {
     visible: TooltipState.visible && TooltipState.screen === modelData
     color: "transparent"
     anchors { left: true; top: true; bottom: true }
-    implicitWidth: 300
+    implicitWidth: 520
     margins.left: 56
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None

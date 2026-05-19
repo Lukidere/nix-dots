@@ -10,16 +10,20 @@ QtObject {
         try { return JSON.parse(_raw) } catch(e) { return {} }
     }
 
-    readonly property Process _loader: Process {
-        command: ["cat", "/home/dhm/.cache/wallust/colors.json"]
-        running: true
-        stdout: StdioCollector { onStreamFinished: root._raw = this.text }
+    readonly property FileView _watcher: FileView {
+        path: "/home/dhm/.cache/wallust/colors.json"
+        watchChanges: true
+        onTextChanged: root._raw = root._watcher.text()
     }
-
-    readonly property Timer _poll: Timer {
-        interval: 3000; running: true; repeat: true
-        onTriggered: { root._loader.running = false; root._loader.running = true }
+    property Timer _colorPoll: Timer {
+        interval: 5000; running: true; repeat: true
+        onTriggered: {
+            root._watcher.reload()
+            const t = root._watcher.text()
+            if (t) root._raw = t
+        }
     }
+    Component.onCompleted: root._raw = root._watcher.text()
 
     readonly property color background: _d.special ? _d.special.background : "#1e1e2e"
     readonly property color foreground: _d.special ? _d.special.foreground : "#cdd6f4"

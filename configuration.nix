@@ -14,7 +14,6 @@ let
     inherit (pkgs) system;
     config.allowUnfree = true;
   };
-  treesitterGrammars = pkgs.vimPlugins.nvim-treesitter.withAllGrammars;
 in
 {
   imports = [
@@ -187,7 +186,6 @@ in
   environment.variables = {
     EDITOR = "/run/current-system/sw/bin/nvim";
     RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-    NVIM_TREESITTER_PATH = "${treesitterGrammars}";
   };
 
   fonts.packages = with pkgs; [
@@ -263,6 +261,7 @@ in
     python3
     bun
     rust-analyzer
+    rustfmt
     rustc
     trunk
     wasm-bindgen-cli

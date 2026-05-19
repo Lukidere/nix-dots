@@ -35,15 +35,16 @@ QtObject {
         onNotification: function(notif) {
             if (root.dnd) { try { notif.close() } catch(_) {}; return }
             const entry = {
-                id:      notif.id,
-                appName: notif.appName  || "Notification",
-                appIcon: notif.appIcon  || "",
-                summary: notif.summary  || "",
-                body:    notif.body     || "",
-                timeout: (notif.expireTimeout > 0) ? notif.expireTimeout : 5000,
+                id:        notif.id,
+                appName:   notif.appName  || "Notification",
+                appIcon:   notif.appIcon  || "",
+                summary:   notif.summary  || "",
+                body:      notif.body     || "",
+                timeout:   (notif.expireTimeout > 0) ? notif.expireTimeout : 5000,
+                createdAt: Date.now(),
                 timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
-                screen:  root.focusedScreen,
-                _ref:    notif
+                screen:    root.focusedScreen,
+                _ref:      notif
             }
             root.items = root.items.concat([entry])
             root.history = [entry].concat(root.history)

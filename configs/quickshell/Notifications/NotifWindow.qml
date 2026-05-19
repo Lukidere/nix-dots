@@ -36,12 +36,13 @@ PanelWindow {
         Repeater {
             model: root.items
             delegate: NotifItem {
-                notifId:  modelData.id
-                appName:  modelData.appName
-                appIcon:  modelData.appIcon
-                summary:  modelData.summary
-                body:     modelData.body
-                timeout:  modelData.timeout
+                notifId:   modelData.id
+                appName:   modelData.appName
+                appIcon:   modelData.appIcon
+                summary:   modelData.summary
+                body:      modelData.body
+                timeout:   modelData.timeout
+                createdAt: modelData.createdAt || Date.now()
             }
         }
     }
