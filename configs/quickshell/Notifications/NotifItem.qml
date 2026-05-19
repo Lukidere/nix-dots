@@ -3,12 +3,16 @@ import "../Theme"
 
 Rectangle {
     id: root
-    property int    notifId:  0
-    property string appName:  ""
-    property string appIcon:  ""
-    property string summary:  ""
-    property string body:     ""
-    property int    timeout:  5000
+    property int    notifId:   0
+    property string appName:   ""
+    property string appIcon:   ""
+    property string summary:   ""
+    property string body:      ""
+    property int    timeout:   5000
+    property real   createdAt: Date.now()
+
+    readonly property int _elapsed:   Math.max(0, Math.min(timeout - 50, Date.now() - createdAt))
+    readonly property int _remaining: timeout - _elapsed
 
     width: 320; height: bodyText.visible ? 84 : 64
     radius: 10
@@ -16,26 +20,61 @@ Rectangle {
     border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.3)
     border.width: 1
 
+    property real swipeX:     0
+    property real _swipeFade: 1.0
+    property bool _dragging:  false
+
+    Behavior on swipeX {
+        enabled: !root._dragging
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
+    Behavior on _swipeFade {
+        enabled: !root._dragging
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
+
+    DragHandler {
+        xAxis.enabled: true
+        yAxis.enabled: false
+        onActiveChanged: {
+            root._dragging = active
+            if (!active) {
+                if (Math.abs(root.swipeX) > 100) {
+                    NotifState.remove(root.notifId)
+                } else {
+                    root.swipeX    = 0
+                    root._swipeFade = 1.0
+                }
+            }
+        }
+        onTranslationChanged: {
+            root.swipeX     = translation.x
+            root._swipeFade = Math.max(0, 1 - Math.abs(translation.x) / 220)
+        }
+    }
+
     // Progress bar at bottom showing time remaining
     Rectangle {
         id: progressBar
         anchors { bottom: parent.bottom; left: parent.left; leftMargin: 1; bottomMargin: 1 }
-        width: parent.width - 2; height: 3; radius: 2
+        width: root.timeout > 0 ? (root.width - 2) * (root._remaining / root.timeout) : 0
+        height: 3; radius: 2
         color: Colors.color4
         NumberAnimation on width {
-            from: root.width - 2; to: 0
-            duration: root.timeout
+            from: root.timeout > 0 ? (root.width - 2) * (root._remaining / root.timeout) : 0
+            to: 0
+            duration: root._remaining
             running: true
         }
     }
 
     // Dismiss timer
     Timer {
-        interval: root.timeout; running: true
+        interval: root._remaining; running: true
         onTriggered: NotifState.remove(root.notifId)
     }
 
-    // App icon — use file path if available, otherwise show glyph
+    // App icon
     Item {
         id: iconImg
         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
@@ -109,15 +148,17 @@ Rectangle {
         }
     }
 
-    // Slide-in + scale + fade from right
-    property real slideX: 340
-    transform: Translate { x: root.slideX }
-    opacity: 0
-    scale: 0.92
+    property real slideX: root._elapsed < 400 ? 340 : 0
+    transform: Translate { x: root.slideX + root.swipeX }
+    opacity: (root._elapsed < 400 ? 0 : 1) * root._swipeFade
+    scale: root._elapsed < 400 ? 0.92 : 1.0
+
     Component.onCompleted: {
-        slideAnim.start()
-        fadeAnim.start()
-        scaleAnim.start()
+        if (root._elapsed < 400) {
+            slideAnim.start()
+            fadeAnim.start()
+            scaleAnim.start()
+        }
     }
     NumberAnimation {
         id: slideAnim; target: root; property: "slideX"

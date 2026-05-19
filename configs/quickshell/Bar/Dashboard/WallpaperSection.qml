@@ -70,15 +70,17 @@ Item {
             }
         }
 
-        Flow {
+        Grid {
             id: thumbFlow
-            width: flick.width; spacing: 4
+            width: flick.width
+            columns: 3
+            spacing: 4
 
             Repeater {
                 model: root.wallpapers
                 delegate: Item {
                     required property string modelData
-                    width: (thumbFlow.width - 8) / 3
+                    width: Math.floor((thumbFlow.width - 8) / 3)
                     height: width * 0.625
 
                     Image {

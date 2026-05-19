@@ -1,4 +1,14 @@
 { config, pkgs, ... }:
+let
+  treesitterGrammars = pkgs.vimPlugins.nvim-treesitter.withPlugins (p: with p; [
+    vimdoc vim lua nix bash
+    rust python
+    javascript typescript tsx
+    json yaml toml
+    markdown markdown_inline
+    regex
+  ]);
+in
 {
   home.packages = with pkgs; [
     #---- CLI ----#
@@ -39,6 +49,10 @@
     source = ./configs/nvim;
     recursive = true;
   };
+
+  xdg.configFile."nvim/nix-ts-path.lua".text = ''
+    vim.opt.runtimepath:append("${treesitterGrammars}")
+  '';
 
   xdg.configFile."zathura" = {
     source = ./configs/zathura;

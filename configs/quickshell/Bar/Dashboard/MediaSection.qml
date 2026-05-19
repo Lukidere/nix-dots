@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell.Io
 import "../../Theme"
 
 Item {
@@ -8,54 +7,17 @@ Item {
     property int mode: 0  // 0 = MPRIS, 1 = Navidrome
 
     // Exposed for ambient-art consumers in DashboardWindow
-    property string artUrl: root.mpArtUrl
+    property string artUrl: MprisState.artUrl
 
-    // ── MPRIS state ─────────────────────────────────────────────────
-    property string mpStatus:   "Stopped"
-    property string mpTitle:    "Nothing playing"
-    property string mpArtist:   ""
-    property string mpAlbum:    ""
-    property string mpArtUrl:   ""
-    property real   mpPosition: 0
-    property real   mpDuration: 0
-
-    readonly property Process _metaProc: Process {
-        command: ["sh", "-c",
-            "playerctl status 2>/dev/null; echo '---';" +
-            "playerctl metadata --format '{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}|{{mpris:length}}' 2>/dev/null; echo '---';" +
-            "playerctl position 2>/dev/null"
-        ]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = this.text.split("---\n")
-                const st = (parts[0] || "").trim()
-                if (st === "Playing" || st === "Paused") root.mpStatus = st
-                else root.mpStatus = "Stopped"
-                if (parts.length > 1) {
-                    const f = (parts[1] || "").trim().split("|")
-                    root.mpTitle   = f[0] || "Unknown"
-                    root.mpArtist  = f[1] || ""
-                    root.mpAlbum   = f[2] || ""
-                    root.mpArtUrl  = f[3] || ""
-                    const len      = parseInt(f[4] || "0")
-                    root.mpDuration = len > 0 ? len / 1000000 : 0
-                }
-                if (parts.length > 2) {
-                    const p = parseFloat((parts[2] || "").trim())
-                    root.mpPosition = isNaN(p) ? 0 : p
-                }
-            }
-        }
-    }
-    Timer {
-        interval: 2000; running: true; repeat: true
-        onTriggered: { root._metaProc.running = false; root._metaProc.running = true }
-    }
-
-    Process { id: prevProc; command: ["playerctl", "previous"]; running: false }
-    Process { id: playProc; command: ["playerctl", "play-pause"]; running: false }
-    Process { id: nextProc; command: ["playerctl", "next"]; running: false }
+    // ── MPRIS state (sourced from shared singleton) ──────────────────
+    readonly property string mpStatus:   MprisState.status
+    readonly property string mpTitle:    MprisState.title
+    readonly property string mpArtist:   MprisState.artist
+    readonly property string mpAlbum:    MprisState.album
+    readonly property string mpArtUrl:   MprisState.artUrl
+    readonly property string mpPlayer:   MprisState.player
+    readonly property real   mpPosition: MprisState.position
+    readonly property real   mpDuration: MprisState.duration
 
     function fmtTime(s) {
         const m = Math.floor(s / 60)
@@ -112,7 +74,7 @@ Item {
                 // Glow ring — pulses when playing
                 Rectangle {
                     width: 88; height: 88; radius: 12
-                    anchors { left: parent.left; leftMargin: -4; verticalCenter: parent.verticalCenter }
+                    anchors.centerIn: artRect
                     color: "transparent"
                     border.width: 2
                     border.color: root.mpStatus === "Playing"
@@ -124,7 +86,7 @@ Item {
                 Rectangle {
                     id: artRect
                     width: 80; height: 80
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     radius: 8; color: Qt.lighter(Colors.background, 1.3); clip: true
                     Image {
                         id: artImg; anchors.fill: parent
@@ -182,10 +144,9 @@ Item {
                         MouseArea {
                             id: ctrlMa; anchors.fill: parent; hoverEnabled: true
                             onClicked: {
-                                const p = index === 0 ? prevProc : index === 1 ? playProc : nextProc
-                                if (index === 1)
-                                    root.mpStatus = root.mpStatus === "Playing" ? "Paused" : "Playing"
-                                p.running = false; p.running = true
+                                if (index === 0) MprisState.previous()
+                                else if (index === 1) MprisState.playPause()
+                                else MprisState.next()
                             }
                         }
                     }
@@ -316,7 +277,7 @@ Item {
                             MouseArea { id: npMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
                                 onClicked: {
                                     if (index === 0) navi.prevInQueue()
-                                    else if (index === 1) { playProc.running = false; playProc.running = true }
+                                    else if (index === 1) MprisState.playPause()
                                     else navi.nextInQueue()
                                 }
                             }

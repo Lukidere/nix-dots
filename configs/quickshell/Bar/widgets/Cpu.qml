@@ -8,7 +8,6 @@ Item {
     width: 44
     height: col.implicitHeight
 
-    // CPU
     property real cpuPct:   0
     property var  _cpuPrev: null
     readonly property FileView statFile: FileView { path: "/proc/stat"; watchChanges: false }
@@ -30,7 +29,6 @@ Item {
         }
     }
 
-    // RAM
     property real   ramPct:   0
     property string ramLabel: ""
     readonly property FileView memFile: FileView { path: "/proc/meminfo"; watchChanges: false }
@@ -48,7 +46,6 @@ Item {
         }
     }
 
-    // Disk
     property real   diskPct:   0
     property string diskLabel: ""
     readonly property Process dfProc: Process {
@@ -73,13 +70,30 @@ Item {
         onTriggered: { root.dfProc.running = false; root.dfProc.running = true }
     }
 
+    property real gpuPct: 0
+    readonly property Process gpuProc: Process {
+        command: ["sh", "-c", "cat /sys/class/drm/card*/device/gpu_busy_percent 2>/dev/null | head -1"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const t = this.text.trim()
+                if (t) root.gpuPct = Math.min(100, Math.max(0, parseInt(t) || 0))
+            }
+        }
+    }
+    Timer {
+        interval: 2000; running: true; repeat: true
+        onTriggered: { root.gpuProc.running = false; root.gpuProc.running = true }
+    }
+
     Process { id: htopProc; command: ["sh", "-c", "ghostty -e htop"]; running: false }
 
     MouseArea {
         id: ma; anchors.fill: parent; hoverEnabled: true
         onClicked: { htopProc.running = false; htopProc.running = true }
         onEntered: TooltipState.show(
-            "CPU " + Math.round(root.cpuPct) + "%  |  RAM " + Math.round(root.ramPct) + "% (" + root.ramLabel + ")  |  Disk " + Math.round(root.diskPct) + "% (" + root.diskLabel + ")  |  click for htop",
+            "CPU " + Math.round(root.cpuPct) + "%  |  RAM " + Math.round(root.ramPct) + "% (" + root.ramLabel + ")" +
+            "  |  Disk " + Math.round(root.diskPct) + "% (" + root.diskLabel + ")  |  GPU " + Math.round(root.gpuPct) + "%  |  click for htop",
             mapToGlobal(0, height / 2).y, root.barScreen)
         onExited: TooltipState.hide()
     }
@@ -87,66 +101,88 @@ Item {
     Column {
         id: col
         width: parent.width
-        spacing: 3
+        spacing: 2
 
-        // CPU row
-        Item {
-            id: cpuRow
-            width: 44; height: 18
-            property color barClr: root.cpuPct > 80 ? Colors.color1
-                                 : root.cpuPct > 50 ? Colors.color3 : Colors.color2
-            Text {
-                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\uF85A"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                color: ma.containsMouse ? Colors.color4 : cpuRow.barClr
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-            Text {
-                anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: Math.round(root.cpuPct) + "%"
-                font.pixelSize: 8; color: Colors.color6
+        ArcRing {
+            pct: root.cpuPct; icon: "\uF0E4"; label: Math.round(root.cpuPct) + "%"
+            ringColor: root.cpuPct > 80 ? Colors.color1 : root.cpuPct > 50 ? Colors.color3 : Colors.color2
+            hovered: ma.containsMouse
+        }
+        ArcRing {
+            pct: root.ramPct; icon: "\uF1C0"; label: Math.round(root.ramPct) + "%"
+            ringColor: root.ramPct > 80 ? Colors.color1 : root.ramPct > 50 ? Colors.color3 : Colors.color4
+            hovered: ma.containsMouse
+        }
+        ArcRing {
+            pct: root.diskPct; icon: "\uF0A0"; label: Math.round(root.diskPct) + "%"
+            ringColor: root.diskPct > 90 ? Colors.color1 : root.diskPct > 70 ? Colors.color3 : Colors.color5
+            hovered: ma.containsMouse
+        }
+        ArcRing {
+            pct: root.gpuPct; icon: "\u{F43F}"; label: Math.round(root.gpuPct) + "%"
+            ringColor: root.gpuPct > 80 ? Colors.color1 : root.gpuPct > 50 ? Colors.color3 : Colors.color6
+            hovered: ma.containsMouse
+        }
+    }
+
+    component ArcRing: Item {
+        id: ring
+        width: 44; height: 42
+
+        property real   pct:       0
+        property string icon:      ""
+        property string label:     ""
+        property color  ringColor: Colors.color4
+        property bool   hovered:   false
+
+        onPctChanged:       arc.requestPaint()
+        onRingColorChanged: arc.requestPaint()
+
+        Canvas {
+            id: arc
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 2 }
+            width: 36; height: 36
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                const cx = width / 2, cy = height / 2, r = 14
+                const start = -Math.PI / 2
+
+                // Background track
+                ctx.beginPath()
+                ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+                ctx.strokeStyle = Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.18)
+                ctx.lineWidth = 3
+                ctx.stroke()
+
+                // Value arc
+                const clamped = Math.max(0, Math.min(100, ring.pct))
+                if (clamped > 0) {
+                    const end = start + (clamped / 100) * 2 * Math.PI
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, r, start, end)
+                    ctx.strokeStyle = ring.ringColor
+                    ctx.lineWidth = 3
+                    ctx.lineCap = "round"
+                    ctx.stroke()
+                }
             }
         }
 
-        // RAM row
-        Item {
-            id: ramRow
-            width: 44; height: 18
-            property color barClr: root.ramPct > 80 ? Colors.color1
-                                 : root.ramPct > 50 ? Colors.color3 : Colors.color4
-            Text {
-                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\u{F035B}"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                color: ma.containsMouse ? Colors.color4 : ramRow.barClr
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-            Text {
-                anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: Math.round(root.ramPct) + "%"
-                font.pixelSize: 8; color: Colors.color6
-            }
+        Text {
+            anchors.centerIn: arc
+            text: ring.icon
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+            color: ring.hovered ? Colors.color4 : ring.ringColor
+            Behavior on color { ColorAnimation { duration: 200 } }
         }
 
-        // Disk row
-        Item {
-            id: diskRow
-            width: 44; height: 18
-            property color barClr: root.diskPct > 90 ? Colors.color1
-                                 : root.diskPct > 70 ? Colors.color3 : Colors.color5
-            Text {
-                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: "\uF0A0"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 13
-                color: ma.containsMouse ? Colors.color4 : diskRow.barClr
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-            Text {
-                anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter; verticalCenterOffset: -2 }
-                text: Math.round(root.diskPct) + "%"
-                font.pixelSize: 8; color: Colors.color6
-            }
+        Text {
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; bottomMargin: 1 }
+            horizontalAlignment: Text.AlignHCenter
+            text: ring.label
+            font.pixelSize: 7; color: Colors.color8
         }
     }
 }

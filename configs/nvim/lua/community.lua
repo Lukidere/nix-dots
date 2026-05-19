@@ -11,5 +11,6 @@ return {
   { import = "astrocommunity.pack.bash" },
   { import = "astrocommunity.pack.nix" },
   { import = "astrocommunity.pack.typescript" },
+  { import = "astrocommunity.editing-support.conform-nvim" },
   -- import/override with your plugins folder
 }

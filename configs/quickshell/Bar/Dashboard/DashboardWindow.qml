@@ -7,14 +7,14 @@ PanelWindow {
     id: root
     required property var modelData
     screen: modelData
-    visible: DashboardState.activeScreenName === root.modelData.name || DashboardState.volPanelScreen === root.modelData.name
+    property bool _shouldShow: DashboardState.activeScreenName === root.modelData.name || DashboardState.volPanelScreen === root.modelData.name
+    visible: _shouldShow || panel.opacity > 0 || volPanelRect.opacity > 0
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: panel.activeTab === 5 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
 
-    // ── Horizontal slider (used by volume panel) ──────────────────────────
     component HSlider: Item {
         id: hs
         height: 20
@@ -45,7 +45,6 @@ PanelWindow {
         }
     }
 
-    // ── Bottom volume/brightness panel ────────────────────────────────────
     Item {
         id: volPanelArea
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom }
@@ -81,7 +80,6 @@ PanelWindow {
                 }
                 spacing: 14
 
-                // Volume
                 Column {
                     width: parent.width; spacing: 6
                     Item {
@@ -128,7 +126,6 @@ PanelWindow {
                     }
                 }
 
-                // Brightness
                 Column {
                     width: parent.width; spacing: 6
                     Item {
@@ -163,7 +160,7 @@ PanelWindow {
         x: Math.round((parent.width - panelW - 20) / 2)
         y: 0
         width: panelW + 20
-        height: panel.y + panel.height + 12
+        height: root._shouldShow ? panel.y + panel.height + 12 : 14
 
         readonly property int panelW: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
 
@@ -190,28 +187,37 @@ PanelWindow {
 
             property int activeTab: 0
 
-            // ── Header: greeting + clock + date + power ───────────────
             Item {
                 id: headerBar
                 anchors { left: parent.left; right: parent.right; top: parent.top }
                 anchors { leftMargin: 18; rightMargin: 18; topMargin: 14 }
                 height: 56
 
-                // Greeting (top-left)
-                Text {
-                    id: greetingText
+                // Greeting (top-left) with user icon
+                Row {
                     anchors { left: parent.left; top: parent.top }
-                    text: {
-                        const h = parseInt(Qt.formatTime(new Date(), "hh"))
-                        return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                    spacing: 5
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "\u{F0004}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                        color: Colors.color4
                     }
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                    color: Colors.color8
-                    Timer { interval: 60000; running: true; repeat: true
-                            onTriggered: {
-                                const h = parseInt(Qt.formatTime(new Date(), "hh"))
-                                greetingText.text = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
-                            }
+                    Text {
+                        id: greetingText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                            return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                        }
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                        color: Colors.color8
+                        Timer { interval: 60000; running: true; repeat: true
+                                onTriggered: {
+                                    const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                                    greetingText.text = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                                }
+                        }
                     }
                 }
 
@@ -220,7 +226,7 @@ PanelWindow {
                     id: headerTime
                     anchors { left: parent.left; bottom: parent.bottom }
                     text: Qt.formatTime(new Date(), "hh:mm")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 24; font.bold: true
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 28; font.bold: true
                     color: Colors.foreground
                     Timer { interval: 10000; running: true; repeat: true
                             onTriggered: headerTime.text = Qt.formatTime(new Date(), "hh:mm") }
@@ -235,6 +241,14 @@ PanelWindow {
                 }
             }
 
+            // Accent underline below header
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; top: headerBar.bottom }
+                anchors { leftMargin: 18; rightMargin: 18; topMargin: 6 }
+                height: 1
+                color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
+            }
+
             // Subtle top gradient accent
             Rectangle {
                 anchors { left: parent.left; right: parent.right; top: parent.top }
@@ -245,7 +259,6 @@ PanelWindow {
                 }
             }
 
-            // ── Tab bar ──────────────────────────────────────────────
             Row {
                 id: tabRow
                 anchors { left: parent.left; right: parent.right; top: headerBar.bottom }
@@ -299,7 +312,6 @@ PanelWindow {
                 Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
             }
 
-            // ── Content area ─────────────────────────────────────────
             Item {
                 id: contentArea
                 anchors {
@@ -363,12 +375,20 @@ PanelWindow {
                     }
                 }
 
-                // Tab 2 — Wallpaper chooser
-                WallpaperSection {
+                // Tab 2 — Wallpaper chooser (lazy-loaded)
+                Item {
+                    id: tab2
                     anchors.fill: parent
                     opacity: panel.activeTab === 2 ? 1 : 0
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 140 } }
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
+                        anchors.fill: parent
+                        active: tab2._loaded
+                        sourceComponent: Component { WallpaperSection { anchors.fill: parent } }
+                    }
                 }
 
                 // Tab 3 — Notifications + Clipboard
@@ -395,75 +415,81 @@ PanelWindow {
                     }
                 }
 
-                // Tab 4 — System Info + Network + Bluetooth
+                // Tab 4 — System Info + Performance (lazy-loaded)
                 Item {
+                    id: tab4
                     anchors.fill: parent
                     opacity: panel.activeTab === 4 ? 1 : 0
                     visible: opacity > 0
                     clip: true
                     Behavior on opacity { NumberAnimation { duration: 140 } }
-
-                    Flickable {
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
                         anchors.fill: parent
-                        contentHeight: sysCol.implicitHeight
-                        clip: true
-
-                        Column {
-                            id: sysCol
-                            width: parent.width; spacing: 10
-
-                            Row {
-                                spacing: 6
-                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color3; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: "SYSTEM"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                        active: tab4._loaded
+                        sourceComponent: Component {
+                            Flickable {
+                                contentHeight: sysCol.implicitHeight
+                                clip: true
+                                Column {
+                                    id: sysCol
+                                    width: parent.width; spacing: 10
+                                    Row {
+                                        spacing: 6
+                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color3; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: "SYSTEM"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                                    }
+                                    SystemInfo { width: parent.width }
+                                    Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
+                                    Row {
+                                        spacing: 6
+                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color2; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: "PERFORMANCE"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                                    }
+                                    Performance { width: parent.width }
+                                }
                             }
-                            SystemInfo { width: parent.width }
-
-                            Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-
-                            Row {
-                                spacing: 6
-                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color2; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: "PERFORMANCE"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                            }
-                            Performance { width: parent.width }
                         }
                     }
                 }
 
-                // Tab 5 — Pomodoro + Tasks
+                // Tab 5 — Pomodoro + Tasks (lazy-loaded)
                 Item {
+                    id: tab5
                     anchors.fill: parent
                     opacity: panel.activeTab === 5 ? 1 : 0
                     visible: opacity > 0
                     clip: true
                     Behavior on opacity { NumberAnimation { duration: 140 } }
-
-                    Flickable {
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
                         anchors.fill: parent
-                        contentHeight: pomoTaskCol.implicitHeight
-                        clip: true
-                        boundsBehavior: Flickable.StopAtBounds
-
-                        Column {
-                            id: pomoTaskCol
-                            width: parent.width; spacing: 10
-
-                            Row {
-                                spacing: 6
-                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color1; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: "POMODORO"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                        active: tab5._loaded
+                        sourceComponent: Component {
+                            Flickable {
+                                contentHeight: pomoTaskCol.implicitHeight
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                Column {
+                                    id: pomoTaskCol
+                                    width: parent.width; spacing: 10
+                                    Row {
+                                        spacing: 6
+                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color1; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: "POMODORO"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                                    }
+                                    PomodoroTimer { width: parent.width }
+                                    Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
+                                    Row {
+                                        spacing: 6
+                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color5; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: "TASKS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
+                                    }
+                                    TodoList { width: parent.width }
+                                }
                             }
-                            PomodoroTimer { width: parent.width }
-
-                            Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-
-                            Row {
-                                spacing: 6
-                                Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color5; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: "TASKS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                            }
-                            TodoList { width: parent.width }
                         }
                     }
                 }

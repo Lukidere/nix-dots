@@ -51,7 +51,7 @@ Item {
 
     // Step 1: get location
     readonly property Process _geoProc: Process {
-        command: ["sh", "-c", "curl -sf 'https://ipapi.co/json' 2>/dev/null"]
+        command: ["sh", "-c", "curl -sf 'https://ipwho.is/' 2>/dev/null"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {

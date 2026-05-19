@@ -69,7 +69,6 @@ PanelWindow {
         }
     }
 
-    // ── Mutual exclusivity ────────────────────────────────────────────
     Connections {
         target: wifiWidget
         function onMenuOpenChanged() { if (wifiWidget.menuOpen) { btWidget.menuOpen = false; batWidget.menuOpen = false } }
@@ -83,7 +82,6 @@ PanelWindow {
         function onMenuOpenChanged() { if (batWidget.menuOpen) { wifiWidget.menuOpen = false; btWidget.menuOpen = false } }
     }
 
-    // ── WiFi popup ────────────────────────────────────────────────────
     Rectangle {
         id: wifiPopup
         x: 60
@@ -354,7 +352,6 @@ PanelWindow {
         }
     }
 
-    // ── Bluetooth popup ───────────────────────────────────────────────
     Rectangle {
         id: btPopupRect
         x: 60
@@ -386,9 +383,9 @@ PanelWindow {
                     width: parent.width; spacing: 8
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: btWidget.btConn ? "\u{F00B1}" : "\u{F00AF}"
+                        text: NetworkState.btConn ? "\u{F00B1}" : "\u{F00AF}"
                         font.family: "Iosevka Nerd Font"; font.pixelSize: 16
-                        color: btWidget.btConn ? Colors.color4 : Colors.foreground
+                        color: NetworkState.btConn ? Colors.color4 : Colors.foreground
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -398,13 +395,13 @@ PanelWindow {
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 38; height: 18; radius: 9
-                        color: btWidget.btOn ? Colors.color4 : Qt.lighter(Colors.background, 1.5)
+                        color: NetworkState.btOn ? Colors.color4 : Qt.lighter(Colors.background, 1.5)
                         Behavior on color { ColorAnimation { duration: 150 } }
                         Text {
                             anchors.centerIn: parent
-                            text: btWidget.btOn ? "ON" : "OFF"
+                            text: NetworkState.btOn ? "ON" : "OFF"
                             font.family: "Iosevka Nerd Font"; font.pixelSize: 9; font.bold: true
-                            color: btWidget.btOn ? Colors.background : Colors.color6
+                            color: NetworkState.btOn ? Colors.background : Colors.color6
                         }
                         MouseArea { anchors.fill: parent; onClicked: btWidget.toggleBluetooth() }
                     }
@@ -419,18 +416,18 @@ PanelWindow {
                 // Connected device info
                 Column {
                     width: parent.width; spacing: 4
-                    visible: btWidget.btConn
+                    visible: NetworkState.btConn
 
                     Text { text: "Connected"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color2 }
                     Item {
                         width: parent.width; height: 16
                         Text {
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            text: btWidget.btDevice; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true; color: Colors.foreground
+                            text: NetworkState.btDevice; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true; color: Colors.foreground
                         }
                         Text {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            text: btWidget.btMAC; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8
+                            text: NetworkState.btMAC; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8
                         }
                     }
                 }
@@ -438,18 +435,18 @@ PanelWindow {
                 Rectangle {
                     width: parent.width; height: 1
                     color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.2)
-                    visible: btWidget.btOn
+                    visible: NetworkState.btOn
                 }
 
                 // Paired devices
                 Column {
                     width: parent.width; spacing: 4
-                    visible: btWidget.btOn && btWidget.pairedDevs.length > 0
+                    visible: NetworkState.btOn && NetworkState.pairedDevs.length > 0
 
-                    Text { text: "PAIRED DEVICES (" + btWidget.pairedDevs.length + ")"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color6 }
+                    Text { text: "PAIRED DEVICES (" + NetworkState.pairedDevs.length + ")"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color6 }
 
                     Repeater {
-                        model: btWidget.pairedDevs
+                        model: NetworkState.pairedDevs
                         delegate: Rectangle {
                             required property var modelData
                             width: parent.width; height: 40; radius: 6
@@ -504,12 +501,12 @@ PanelWindow {
                     }
                 }
 
-                Rectangle { width: parent.width; height: 1; color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.2); visible: btWidget.btOn }
+                Rectangle { width: parent.width; height: 1; color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.2); visible: NetworkState.btOn }
 
                 // Scan controls
                 Item {
                     width: parent.width; height: 28
-                    visible: btWidget.btOn
+                    visible: NetworkState.btOn
 
                     Rectangle {
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
@@ -579,15 +576,14 @@ PanelWindow {
                     }
                 }
 
-                Text { visible: !btWidget.btOn; width: parent.width; text: "Bluetooth is off"; horizontalAlignment: Text.AlignHCenter; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8 }
-                Text { visible: btWidget.btOn && btWidget.pairedDevs.length === 0 && !btWidget.scanning; width: parent.width; text: "No paired devices"; horizontalAlignment: Text.AlignHCenter; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8 }
+                Text { visible: !NetworkState.btOn; width: parent.width; text: "Bluetooth is off"; horizontalAlignment: Text.AlignHCenter; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8 }
+                Text { visible: NetworkState.btOn && NetworkState.pairedDevs.length === 0 && !btWidget.scanning; width: parent.width; text: "No paired devices"; horizontalAlignment: Text.AlignHCenter; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8 }
                 Text { visible: btWidget.scanning && btWidget.scannedDevs.length === 0; width: parent.width; text: "Searching for devices..."; horizontalAlignment: Text.AlignHCenter; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8 }
                 Item { width: 1; height: 4 }
             }
         }
     }
 
-    // ── Battery / power-profile popup ─────────────────────────────────
     Rectangle {
         id: batPopup
         x: 60

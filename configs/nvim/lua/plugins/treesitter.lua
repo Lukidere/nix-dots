@@ -1,10 +1,7 @@
 -- Customize Treesitter
 
--- Add Nix-provided treesitter grammars to runtimepath
-local nix_ts_path = vim.env.NVIM_TREESITTER_PATH
-if nix_ts_path and nix_ts_path ~= "" then
-  vim.opt.runtimepath:append(nix_ts_path)
-end
+-- Add Nix-provided treesitter grammars to runtimepath (path written by home-manager)
+pcall(require, "nix-ts-path")
 
 -- Compatibility shim: astrocore calls nvim-treesitter.get_installed() which was removed
 -- in newer nvim-treesitter. Patch it to use the current API.
