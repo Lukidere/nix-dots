@@ -1,15 +1,13 @@
 Cachy 1.0 Cachy.qml
 Clock 1.0 Clock.qml
 Cpu 1.0 Cpu.qml
-Ram 1.0 Ram.qml
 Disk 1.0 Disk.qml
-SysTray 1.0 SysTray.qml
 Mpris 1.0 Mpris.qml
 Workspaces 1.0 Workspaces.qml
 Privacy 1.0 Privacy.qml
+TrayWidget 1.0 TrayWidget.qml
 AudioGroup 1.0 AudioGroup.qml
 BrightnessGroup 1.0 BrightnessGroup.qml
 Battery 1.0 Battery.qml
 PowerButton 1.0 PowerButton.qml
 ActiveWindow 1.0 ActiveWindow.qml
-NetworkSpeed 1.0 NetworkSpeed.qml
