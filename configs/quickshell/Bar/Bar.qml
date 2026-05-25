@@ -62,6 +62,7 @@ PanelWindow {
         Column {
             anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 8 }
             spacing: 4
+            TrayWidget      { barWindow: root; barScreen: root.modelData }
             AudioGroup      { id: wifiWidget }
             BrightnessGroup { id: btWidget }
             Battery         { id: batWidget; barScreen: root.modelData }

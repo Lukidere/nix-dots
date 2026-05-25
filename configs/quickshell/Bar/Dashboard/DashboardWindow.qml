@@ -160,7 +160,7 @@ PanelWindow {
         x: Math.round((parent.width - panelW - 20) / 2)
         y: 0
         width: panelW + 20
-        height: root._shouldShow ? panel.y + panel.height + 12 : 14
+        height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 12 : 14
 
         readonly property int panelW: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
 

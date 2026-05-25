@@ -11,7 +11,7 @@ Item {
     }
     readonly property Process pwProc: Process {
         command: ["sh", "-c",
-            "pw-dump --no-props 2>/dev/null | " +
+            "pw-dump 2>/dev/null | " +
             "jq -r '[.[] | select(.type==\"PipeWire:Interface:Node\") | " +
             "select(.info.props[\"media.class\"] == \"Video/Source\") | " +
             ".info.props[\"application.name\"]] | " +
