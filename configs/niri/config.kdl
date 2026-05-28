@@ -249,7 +249,10 @@ animations {
 window-rule {
     match title=r#"Bitwarden"#
     open-floating true
- }
+    default-column-width { proportion 0.0; }
+    max-width 420
+    max-height 640
+}
 
 window-rule {
     match app-id=r#"librewolf"#
@@ -261,6 +264,8 @@ window-rule {
 
 window-rule {
     match title=r#".*(Open|Save|Select).*"#
+    exclude app-id=r#"librewolf"#
+    exclude app-id=r#"vesktop"#
     open-floating true
     default-column-width { proportion 0.0; }
     max-width 800
@@ -269,6 +274,8 @@ window-rule {
 
 window-rule {
     match title=r#".*File.*"#
+    exclude app-id=r#"librewolf"#
+    exclude app-id=r#"vesktop"#
     open-floating true
     default-column-width { proportion 0.0; }
     max-width 800
@@ -290,6 +297,8 @@ window-rule {
 
 window-rule {
     match title=r#".*(Dialog|Properties|Preferences|Settings|Rename).*"#
+    exclude app-id=r#"librewolf"#
+    exclude app-id=r#"vesktop"#
     open-floating true
 }
 
