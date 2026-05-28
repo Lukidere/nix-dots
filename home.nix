@@ -1,13 +1,25 @@
 { config, pkgs, ... }:
 let
-  treesitterGrammars = pkgs.vimPlugins.nvim-treesitter.withPlugins (p: with p; [
-    vimdoc vim lua nix bash
-    rust python
-    javascript typescript tsx
-    json yaml toml
-    markdown markdown_inline
-    regex
-  ]);
+  treesitterGrammars = pkgs.vimPlugins.nvim-treesitter.withPlugins (
+    p: with p; [
+      vimdoc
+      vim
+      lua
+      nix
+      bash
+      rust
+      python
+      javascript
+      typescript
+      tsx
+      json
+      yaml
+      toml
+      markdown
+      markdown_inline
+      regex
+    ]
+  );
 in
 {
   home.packages = with pkgs; [
@@ -82,7 +94,14 @@ in
   xdg.configFile."quickshell" = {
     source = ./configs/quickshell;
     recursive = true;
+  };
 
+  gtk = {
+    enable = true;
+    iconTheme = {
+      package = pkgs.papirus-icon-theme;
+      name = "Papirus-Dark";
+    };
   };
 
 }
