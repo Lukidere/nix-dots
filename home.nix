@@ -104,4 +104,20 @@ in
     };
   };
 
+  systemd.user.services.quickshell = {
+    Unit = {
+      Description = "Quickshell desktop shell";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "/run/current-system/sw/bin/quickshell";
+      Restart = "on-failure";
+      RestartSec = "1s";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
+
 }

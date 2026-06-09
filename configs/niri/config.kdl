@@ -1,5 +1,4 @@
 spawn-at-startup "awww-daemon"
-spawn-at-startup "quickshell"
 
 // General Settings
 prefer-no-csd
@@ -57,133 +56,111 @@ layer-rule {
 }
 
 binds {
-    // Shortcuts Panel
-    MOD+S                               { show-hotkey-overlay; }
+    // ── System ───────────────────────────────────────────────────────
+    MOD+S            hotkey-overlay-title="Show shortcuts"                    { show-hotkey-overlay; }
+    MOD+SHIFT+E      hotkey-overlay-title="Logout"                            { quit; }
+    MOD+ALT+W        hotkey-overlay-title="Restart Quickshell"                { spawn "bash" "/home/dhm/.config/quickshell/scripts/restart.sh"; }
 
-    // Application Shortcuts
-    MOD+SHIFT+E                         hotkey-overlay-title="Quit Niri (logout)" { quit; }
-    MOD+RETURN                          hotkey-overlay-title="Open Terminal: ghostty" { spawn-sh "ghostty"; }
-    MOD+Q                               hotkey-overlay-title="Open Browser: Librewolf" { spawn-sh "librewolf"; }
-    MOD+R                               hotkey-overlay-title="Open App Launcher: quickshell-dhm-launcher" { spawn-sh "echo x > /run/user/1000/qs-launcher"; }
-    MOD+E                               hotkey-overlay-title="File Manager: Thunar" { spawn-sh "thunar"; }
+    // ── Launch apps ──────────────────────────────────────────────────
+    MOD+RETURN       hotkey-overlay-title="Terminal (ghostty)"                { spawn-sh "ghostty"; }
+    MOD+Q            hotkey-overlay-title="Browser (librewolf)"               { spawn-sh "librewolf"; }
+    MOD+R            hotkey-overlay-title="App launcher"                      { spawn-sh "echo x > /run/user/1000/qs-launcher"; }
+    MOD+E            hotkey-overlay-title="Files"                             { spawn-sh "echo x > /run/user/1000/qs-fm"; }
 
-    // Media Keys
-    // Window Management
-    MOD+SHIFT+C                         { close-window; }
+    // ── Focus ────────────────────────────────────────────────────────
+    MOD+H            hotkey-overlay-title="Focus left"                        { focus-column-left; }
+    MOD+L            hotkey-overlay-title="Focus right"                       { focus-column-right; }
+    MOD+K            hotkey-overlay-title="Focus workspace up"                { focus-workspace-up; }
+    MOD+J            hotkey-overlay-title="Focus workspace down"              { focus-workspace-down; }
+    MOD+LEFT         hotkey-overlay-title="Focus left"                        { focus-column-left; }
+    MOD+RIGHT        hotkey-overlay-title="Focus right"                       { focus-column-right; }
+    MOD+UP           hotkey-overlay-title="Focus window up"                   { focus-window-up; }
+    MOD+DOWN         hotkey-overlay-title="Focus window down"                 { focus-window-down; }
+    MOD+HOME         hotkey-overlay-title="Focus first column"                { focus-column-first; }
+    MOD+END          hotkey-overlay-title="Focus last column"                 { focus-column-last; }
+    MOD+TAB          hotkey-overlay-title="Previous workspace"                { focus-workspace-previous; }
 
-    MOD+H                               { focus-column-left; }
-    MOD+J                               { focus-workspace-down; }
-    MOD+K                               { focus-workspace-up; }
-    MOD+L                               { focus-column-right; }
+    // ── Move windows ─────────────────────────────────────────────────
+    MOD+SHIFT+H      hotkey-overlay-title="Move column left"                  { move-column-left; }
+    MOD+SHIFT+L      hotkey-overlay-title="Move column right"                 { move-column-right; }
+    MOD+SHIFT+K      hotkey-overlay-title="Move to workspace up"              { move-column-to-workspace-up; }
+    MOD+SHIFT+J      hotkey-overlay-title="Move to workspace down"            { move-column-to-workspace-down; }
+    MOD+SHIFT+LEFT   hotkey-overlay-title="Move column left"                  { move-column-left; }
+    MOD+SHIFT+RIGHT  hotkey-overlay-title="Move column right"                 { move-column-right; }
+    MOD+SHIFT+UP     hotkey-overlay-title="Move window up"                    { move-window-up; }
+    MOD+SHIFT+DOWN   hotkey-overlay-title="Move window down"                  { move-window-down; }
+    MOD+SHIFT+HOME   hotkey-overlay-title="Move to first column"              { move-column-to-first; }
+    MOD+SHIFT+END    hotkey-overlay-title="Move to last column"               { move-column-to-last; }
 
-    MOD+LEFT                            { focus-column-left; }
-    MOD+DOWN                            { focus-window-down; }
-    MOD+UP                              { focus-window-up; }
-    MOD+RIGHT                           { focus-column-right; }
+    // ── Monitors ─────────────────────────────────────────────────────
+    MOD+CTRL+H       hotkey-overlay-title="Focus monitor left"                { focus-monitor-left; }
+    MOD+CTRL+L       hotkey-overlay-title="Focus monitor right"               { focus-monitor-right; }
+    MOD+CTRL+K       hotkey-overlay-title="Focus monitor up"                  { focus-monitor-up; }
+    MOD+CTRL+J       hotkey-overlay-title="Focus monitor down"                { focus-monitor-down; }
+    MOD+CTRL+LEFT    hotkey-overlay-title="Focus monitor left"                { focus-monitor-left; }
+    MOD+CTRL+RIGHT   hotkey-overlay-title="Focus monitor right"               { focus-monitor-right; }
+    MOD+CTRL+UP      hotkey-overlay-title="Focus monitor up"                  { focus-monitor-up; }
+    MOD+CTRL+DOWN    hotkey-overlay-title="Focus monitor down"                { focus-monitor-down; }
 
-    // Move windows within workspace
-    MOD+SHIFT+LEFT                      { move-column-left; }
-    MOD+SHIFT+DOWN                      { move-window-down; }
-    MOD+SHIFT+UP                        { move-window-up; }
-    MOD+SHIFT+RIGHT                     { move-column-right; }
+    MOD+SHIFT+CTRL+H     hotkey-overlay-title="Move to monitor left"          { move-column-to-monitor-left; }
+    MOD+SHIFT+CTRL+L     hotkey-overlay-title="Move to monitor right"         { move-column-to-monitor-right; }
+    MOD+SHIFT+CTRL+K     hotkey-overlay-title="Move to monitor up"            { move-column-to-monitor-up; }
+    MOD+SHIFT+CTRL+J     hotkey-overlay-title="Move to monitor down"          { move-column-to-monitor-down; }
+    MOD+SHIFT+CTRL+LEFT  hotkey-overlay-title="Move to monitor left"          { move-column-to-monitor-left; }
+    MOD+SHIFT+CTRL+RIGHT hotkey-overlay-title="Move to monitor right"         { move-column-to-monitor-right; }
+    MOD+SHIFT+CTRL+UP    hotkey-overlay-title="Move to monitor up"            { move-column-to-monitor-up; }
+    MOD+SHIFT+CTRL+DOWN  hotkey-overlay-title="Move to monitor down"          { move-column-to-monitor-down; }
 
-    MOD+SHIFT+H                         { move-column-left; }
-    MOD+SHIFT+J                         { move-column-to-workspace-down; }
-    MOD+SHIFT+K                         { move-column-to-workspace-up; }
-    MOD+SHIFT+L                         { move-column-right; }
+    // ── Workspaces ───────────────────────────────────────────────────
+    MOD+ESCAPE       hotkey-overlay-title="Overview"          repeat=false    { toggle-overview; }
+    MOD+1            hotkey-overlay-title="Workspace 1"                       { focus-workspace 1; }
+    MOD+2            hotkey-overlay-title="Workspace 2"                       { focus-workspace 2; }
+    MOD+3            hotkey-overlay-title="Workspace 3"                       { focus-workspace 3; }
+    MOD+4            hotkey-overlay-title="Workspace 4"                       { focus-workspace 4; }
+    MOD+5            hotkey-overlay-title="Workspace 5"                       { focus-workspace 5; }
+    MOD+6            hotkey-overlay-title="Workspace 6"                       { focus-workspace 6; }
+    MOD+7            hotkey-overlay-title="Workspace 7"                       { focus-workspace 7; }
+    MOD+8            hotkey-overlay-title="Workspace 8"                       { focus-workspace 8; }
+    MOD+9            hotkey-overlay-title="Workspace 9"                       { focus-workspace 9; }
+    MOD+SHIFT+1      hotkey-overlay-title="Move to workspace 1"               { move-column-to-workspace 1; }
+    MOD+SHIFT+2      hotkey-overlay-title="Move to workspace 2"               { move-column-to-workspace 2; }
+    MOD+SHIFT+3      hotkey-overlay-title="Move to workspace 3"               { move-column-to-workspace 3; }
+    MOD+SHIFT+4      hotkey-overlay-title="Move to workspace 4"               { move-column-to-workspace 4; }
+    MOD+SHIFT+5      hotkey-overlay-title="Move to workspace 5"               { move-column-to-workspace 5; }
+    MOD+SHIFT+6      hotkey-overlay-title="Move to workspace 6"               { move-column-to-workspace 6; }
+    MOD+SHIFT+7      hotkey-overlay-title="Move to workspace 7"               { move-column-to-workspace 7; }
+    MOD+SHIFT+8      hotkey-overlay-title="Move to workspace 8"               { move-column-to-workspace 8; }
+    MOD+SHIFT+9      hotkey-overlay-title="Move to workspace 9"               { move-column-to-workspace 9; }
 
-    // Move to workspace edges
-    MOD+SHIFT+HOME                      { move-column-to-first; }
-    MOD+SHIFT+END                       { move-column-to-last; }
+    MOD+WHEELSCROLLDOWN              cooldown-ms=100 { focus-workspace-down; }
+    MOD+WHEELSCROLLUP                cooldown-ms=100 { focus-workspace-up; }
+    MOD+SHIFT+WHEELSCROLLDOWN        cooldown-ms=100 { move-column-to-workspace-down; }
+    MOD+SHIFT+WHEELSCROLLUP          cooldown-ms=100 { move-column-to-workspace-up; }
+    MOD+WHEELSCROLLRIGHT                             { focus-column-right; }
+    MOD+WHEELSCROLLLEFT                              { focus-column-left; }
+    MOD+CTRL+WHEELSCROLLRIGHT                        { move-column-right; }
+    MOD+CTRL+WHEELSCROLLLEFT                         { move-column-left; }
 
-    MOD+HOME                            { focus-column-first; }
-    MOD+END                             { focus-column-last; }
+    // ── Window management ────────────────────────────────────────────
+    MOD+SHIFT+C      hotkey-overlay-title="Close window"                      { close-window; }
+    MOD+T            hotkey-overlay-title="Toggle floating"                   { toggle-window-floating; }
+    MOD+F            hotkey-overlay-title="Fullscreen"                        { fullscreen-window; }
+    MOD+M            hotkey-overlay-title="Maximize column"                   { maximize-column; }
+    MOD+C            hotkey-overlay-title="Center column"                     { center-column; }
+    MOD+CTRL+C       hotkey-overlay-title="Center all visible columns"        { center-visible-columns; }
 
-    // Monitor Management - Move between monitors
-    MOD+CTRL+LEFT                       { focus-monitor-left; }
-    MOD+CTRL+RIGHT                      { focus-monitor-right; }
-    MOD+CTRL+UP                         { focus-monitor-up; }
-    MOD+CTRL+DOWN                       { focus-monitor-down; }
+    // ── Resize ───────────────────────────────────────────────────────
+    MOD+BRACKETLEFT        hotkey-overlay-title="Shrink column width"         { set-column-width "-10%"; }
+    MOD+BRACKETRIGHT       hotkey-overlay-title="Grow column width"           { set-column-width "+10%"; }
+    MOD+SHIFT+BRACKETLEFT  hotkey-overlay-title="Shrink window height"        { set-window-height "-10%"; }
+    MOD+SHIFT+BRACKETRIGHT hotkey-overlay-title="Grow window height"          { set-window-height "+10%"; }
+    MOD+CTRL+WHEELSCROLLDOWN                                                  { set-window-height "-5%"; }
+    MOD+CTRL+WHEELSCROLLUP                                                    { set-window-height "+5%"; }
 
-    MOD+CTRL+H                          { focus-monitor-left; }
-    MOD+CTRL+L                          { focus-monitor-right; }
-    MOD+CTRL+K                          { focus-monitor-up; }
-    MOD+CTRL+J                          { focus-monitor-down; }
-
-    // Move windows to different monitors
-    MOD+SHIFT+CTRL+LEFT                 { move-column-to-monitor-left; }
-    MOD+SHIFT+CTRL+RIGHT                { move-column-to-monitor-right; }
-    MOD+SHIFT+CTRL+UP                   { move-column-to-monitor-up; }
-    MOD+SHIFT+CTRL+DOWN                 { move-column-to-monitor-down; }
-
-    MOD+SHIFT+CTRL+H                    { move-column-to-monitor-left; }
-    MOD+SHIFT+CTRL+L                    { move-column-to-monitor-right; }
-    MOD+SHIFT+CTRL+K                    { move-column-to-monitor-up; }
-    MOD+SHIFT+CTRL+J                    { move-column-to-monitor-down; }
-
-    // Workspace Management
-    MOD+ESCAPE                          hotkey-overlay-title="Open Overview" repeat=false { toggle-overview; }
-    MOD+WHEELSCROLLDOWN                 cooldown-ms=100 { focus-workspace-down; }
-    MOD+WHEELSCROLLUP                   cooldown-ms=100 { focus-workspace-up; }
-
-    // Move windows to different workspaces - using wheel matches K/J pattern
-    MOD+SHIFT+WHEELSCROLLDOWN           cooldown-ms=100 { move-column-to-workspace-down; }
-    MOD+SHIFT+WHEELSCROLLUP             cooldown-ms=100 { move-column-to-workspace-up; }
-
-    // Column navigation with mouse
-    MOD+WHEELSCROLLRIGHT                { focus-column-right; }
-    MOD+WHEELSCROLLLEFT                 { focus-column-left; }
-    MOD+CTRL+WHEELSCROLLRIGHT           { move-column-right; }
-    MOD+CTRL+WHEELSCROLLLEFT            { move-column-left; }
-
-    // Numbered Workspaces
-    MOD+1                               { focus-workspace 1; }
-    MOD+2                               { focus-workspace 2; }
-    MOD+3                               { focus-workspace 3; }
-    MOD+4                               { focus-workspace 4; }
-    MOD+5                               { focus-workspace 5; }
-    MOD+6                               { focus-workspace 6; }
-    MOD+7                               { focus-workspace 7; }
-    MOD+8                               { focus-workspace 8; }
-    MOD+9                               { focus-workspace 9; }
-
-    // Move windows to numbered workspaces with MOD+SHIFT
-    MOD+SHIFT+1                         { move-column-to-workspace 1; }
-    MOD+SHIFT+2                         { move-column-to-workspace 2; }
-    MOD+SHIFT+3                         { move-column-to-workspace 3; }
-    MOD+SHIFT+4                         { move-column-to-workspace 4; }
-    MOD+SHIFT+5                         { move-column-to-workspace 5; }
-    MOD+SHIFT+6                         { move-column-to-workspace 6; }
-    MOD+SHIFT+7                         { move-column-to-workspace 7; }
-    MOD+SHIFT+8                         { move-column-to-workspace 8; }
-    MOD+SHIFT+9                         { move-column-to-workspace 9; }
-
-    MOD+TAB                             { focus-workspace-previous; }
-
-    // Layout Controls
-    MOD+C                               { center-column; }
-    MOD+CTRL+C                          { center-visible-columns; }
-    MOD+BRACKETLEFT                     { set-column-width "-10%"; }
-    MOD+BRACKETRIGHT                    { set-column-width "+10%"; }
-    MOD+SHIFT+BRACKETLEFT               { set-window-height "-10%"; }
-    MOD+SHIFT+BRACKETRIGHT              { set-window-height "+10%"; }
-
-    // Window resizing with mouse
-    MOD+CTRL+WHEELSCROLLDOWN            { set-window-height "-5%"; }
-    MOD+CTRL+WHEELSCROLLUP              { set-window-height "+5%"; }
-
-    // Window Modes
-    MOD+T                               { toggle-window-floating; }
-    MOD+F                               { fullscreen-window; }
-    MOD+M                               { maximize-column; }
-
-    // Utils - Screenshots and color picker
-    MOD+SHIFT+S                               { screenshot; }
-    MOD+CTRL+S                          { screenshot-window write-to-disk=true; }
-    MOD+P                               { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker"; }
-
-    // Application Restarts
-MOD+ALT+W                           { spawn "sh" "/home/dhm/.config/quickshell/scripts/restart.sh"; }
+    // ── Screenshot & tools ───────────────────────────────────────────
+    MOD+SHIFT+S      hotkey-overlay-title="Screenshot region"                 { screenshot; }
+    MOD+CTRL+S       hotkey-overlay-title="Screenshot window"                 { screenshot-window write-to-disk=true; }
+    MOD+P            hotkey-overlay-title="Color picker"                      { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker"; }
 }
 
 
@@ -247,9 +224,9 @@ animations {
 }
 
 window-rule {
+    match app-id=r#"Bitwarden"#
     match title=r#"Bitwarden"#
     open-floating true
-    default-column-width { proportion 0.0; }
     max-width 420
     max-height 640
 }

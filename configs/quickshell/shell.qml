@@ -6,6 +6,7 @@ import "./Bar/Dashboard"
 import "./Launcher"
 import "./Notifications"
 import "./OSD"
+import "./FileManager"
 
 ShellRoot {
     Variants {
@@ -41,4 +42,5 @@ ShellRoot {
         OSD {}
     }
     Launcher {}
+    FileManager {}
 }
