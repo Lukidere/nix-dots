@@ -330,7 +330,11 @@ PanelWindow {
                             MouseArea {
                                 anchors.fill: parent
                                 enabled: !modelData.inUse && wifiWidget.connectingSSID === ""
-                                onClicked: wifiWidget.connectToNetwork(modelData.ssid)
+                                onClicked: {
+                                    // ponytail: nmcli emits "" or "--" for open networks
+                                    const sec = (modelData.security || "").replace(/-/g, "").trim()
+                                    wifiWidget.connectToNetwork(modelData.ssid, sec !== "")
+                                }
                             }
                         }
                     }

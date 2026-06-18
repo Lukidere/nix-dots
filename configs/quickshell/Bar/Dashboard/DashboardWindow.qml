@@ -45,11 +45,47 @@ PanelWindow {
         }
     }
 
+    // ponytail: vertical twin of HSlider - bottom = 0%, top = 100%
+    component VSlider: Item {
+        id: vs
+        width: 20
+        signal moved(int v)
+        property int   value:  0
+        property color accent: Colors.color4
+        readonly property real frac: Math.max(0, Math.min(1, vs.value / 100))
+
+        Rectangle {
+            anchors { top: parent.top; bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+            width: 4; radius: 2
+            color: Qt.lighter(Colors.background, 1.5)
+            Rectangle {
+                anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+                width: 4; radius: 2
+                height: parent.height * vs.frac
+                color: vs.accent
+                Behavior on height { NumberAnimation { duration: 80 } }
+            }
+        }
+        Rectangle {
+            x: (vs.width - 12) / 2
+            y: Math.max(0, (vs.height - 12) * (1 - vs.frac))
+            width: 12; height: 12; radius: 6
+            color: vs.accent
+        }
+        MouseArea {
+            anchors.fill: parent
+            function calc(my) { return Math.max(0, Math.min(100, Math.round((1 - my / height) * 100))) }
+            onPressed:         vs.moved(calc(mouseY))
+            onPositionChanged: if (pressed) vs.moved(calc(mouseY))
+        }
+    }
+
     Item {
         id: volPanelArea
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom }
-        width: Math.min(420, Math.max(340, Math.round(parent.width * 0.22))) + 40
-        height: volPanelRect.height + 20
+        // ponytail: wide hover catch zone - panel ~108 wide, zone ~180
+        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+        width: volPanelRect.width + 80
+        height: volPanelRect.height + 60
 
         HoverHandler {
             onHoveredChanged: {
@@ -62,105 +98,112 @@ PanelWindow {
 
         Rectangle {
             id: volPanelRect
-            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }
-            width: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
-            height: 124
+            // ponytail: narrow vertical pill, slides in from right edge
+            readonly property bool _open: DashboardState.volPanelScreen === root.modelData.name
+            anchors { verticalCenter: parent.verticalCenter }
+            x: _open ? (parent.width - width) : parent.width - 4
+            width: 108
+            height: 360
             radius: 14
             color: Qt.darker(Colors.background, 1.07)
             border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
             border.width: 1
-            opacity: DashboardState.volPanelScreen === root.modelData.name ? 1 : 0
+            opacity: _open ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on x       { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-            Column {
+            Row {
                 anchors {
-                    left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter
-                    leftMargin: 16; rightMargin: 16
+                    top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right
+                    topMargin: 14; bottomMargin: 14; leftMargin: 10; rightMargin: 10
                 }
-                spacing: 14
+                spacing: 8
 
+                // Volume column
                 Column {
-                    width: parent.width; spacing: 6
-                    Item {
-                        width: parent.width; height: 18
-                        Text {
-                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            text: (quickControls.muted ? "\u{F075F}"
-                                : quickControls.volume > 66 ? "\u{F057E}"
-                                : quickControls.volume > 33 ? "\u{F0580}" : "\u{F057F}") + "  Volume"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12
-                            color: quickControls.muted ? Colors.color1 : Colors.foreground
-                        }
-                        Row {
-                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            spacing: 8
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: quickControls.muted ? "MUTED" : quickControls.volume + "%"
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                                color: quickControls.muted ? Colors.color1 : Colors.color6
-                            }
-                            // Mic mute button - only affects microphone
-                            Rectangle {
-                                width: 24; height: 16; radius: 8
-                                color: quickControls.micMuted
-                                    ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3)
-                                    : Qt.lighter(Colors.background, 1.5)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: quickControls.micMuted ? "\u{F036D}" : "\u{F036C}"
-                                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                                    color: quickControls.micMuted ? Colors.color1 : Colors.color6
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: quickControls.toggleMicMute()
-                                }
-                            }
-                        }
+                    width: (parent.width - 8) / 2
+                    height: parent.height
+                    spacing: 8
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: quickControls.muted ? "\u{F075F}"
+                            : quickControls.volume > 66 ? "\u{F057E}"
+                            : quickControls.volume > 33 ? "\u{F0580}" : "\u{F057F}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: quickControls.muted ? Colors.color1 : Colors.foreground
                     }
-                    HSlider {
-                        width: parent.width; value: quickControls.volume
+                    VSlider {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 20
+                        height: parent.height - 78
+                        value: quickControls.volume
+                        accent: quickControls.muted ? Colors.color1 : Colors.color4
                         onMoved: function(v) { quickControls.setVolume(v) }
                     }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: quickControls.muted ? "-" : quickControls.volume + "%"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                        color: quickControls.muted ? Colors.color1 : Colors.color6
+                    }
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 28; height: 18; radius: 9
+                        color: quickControls.micMuted
+                            ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3)
+                            : Qt.lighter(Colors.background, 1.5)
+                        Text {
+                            anchors.centerIn: parent
+                            text: quickControls.micMuted ? "\u{F036D}" : "\u{F036C}"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                            color: quickControls.micMuted ? Colors.color1 : Colors.color6
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: quickControls.toggleMicMute() }
+                    }
                 }
 
+                // Brightness column
                 Column {
-                    width: parent.width; spacing: 6
-                    Item {
-                        width: parent.width; height: 18
-                        Text {
-                            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            text: (quickControls.brightness > 66 ? "\u{F00DF}"
-                                : quickControls.brightness > 33 ? "\u{F00DE}" : "\u{F00DD}") + "  Brightness"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12
-                            color: Colors.foreground
-                        }
-                        Text {
-                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            text: quickControls.brightness + "%"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                            color: Colors.color6
-                        }
+                    width: (parent.width - 8) / 2
+                    height: parent.height
+                    spacing: 8
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: quickControls.brightness > 66 ? "\u{F00DF}"
+                            : quickControls.brightness > 33 ? "\u{F00DE}" : "\u{F00DD}"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
+                        color: Colors.foreground
                     }
-                    HSlider {
-                        width: parent.width; value: quickControls.brightness
+                    VSlider {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 20
+                        height: parent.height - 78
+                        value: quickControls.brightness
                         accent: Colors.color3
                         onMoved: function(v) { quickControls.setBrightness(v) }
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: quickControls.brightness + "%"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                        color: Colors.color6
                     }
                 }
             }
         }
     }
 
-    // Hover wrapper - sized to panel + small buffer above/around
+    // Hover wrapper - wide catch zone above panel
     Item {
         id: hoverWrapper
-        x: Math.round((parent.width - panelW - 20) / 2)
+        // ponytail: wider buffer (40 px) so mouse catches easily near top edge
+        x: Math.round((parent.width - panelW - 80) / 2)
         y: 0
-        width: panelW + 20
-        height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 12 : 14
+        width: panelW + 80
+        height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 16 : 22
 
         readonly property int panelW: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
 
@@ -182,8 +225,9 @@ PanelWindow {
             border.width: 1
             opacity: DashboardState.activeScreenName === root.modelData.name ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 180 } }
-            Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            // ponytail: snappier entrance - 120/140 vs 180/200
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on y       { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
             property int activeTab: 0
 

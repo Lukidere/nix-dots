@@ -22,7 +22,14 @@ Item {
                 id: trayBtn
                 required property SystemTrayItem modelData
 
-                width: 44; height: 36
+                // ponytail: hide native wifi/BT applets - bar has its own controls
+                readonly property bool _hidden: {
+                    const s = ((modelData.id || "") + " " + (modelData.title || "") + " " + (modelData.tooltipTitle || "")).toLowerCase()
+                    return /nm-applet|networkmanager|blueman|blueberry|bluetooth/.test(s)
+                }
+                visible: !_hidden
+                width:  _hidden ? 0 : 44
+                height: _hidden ? 0 : 36
 
                 Rectangle {
                     anchors.centerIn: parent

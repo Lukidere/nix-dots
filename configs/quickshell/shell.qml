@@ -23,7 +23,7 @@ ShellRoot {
     }
     Variants {
         model: Quickshell.screens
-        TriggerStrip { isBottom: true }
+        TriggerStrip { isRight: true }
     }
     Variants {
         model: Quickshell.screens

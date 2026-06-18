@@ -24,13 +24,14 @@ QtObject {
         _volHideTimer.restart()
     }
 
+    // ponytail: tight close so quick exits feel responsive
     property Timer _hideTimer: Timer {
-        interval: 300
+        interval: 160
         onTriggered: root.activeScreenName = ""
     }
 
     property Timer _volHideTimer: Timer {
-        interval: 400
+        interval: 180
         onTriggered: root.volPanelScreen = ""
     }
 }

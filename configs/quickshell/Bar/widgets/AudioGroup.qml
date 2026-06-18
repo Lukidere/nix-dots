@@ -182,7 +182,7 @@ Item {
     }
 
     // ── Public API ────────────────────────────────────────────────
-    function connectToNetwork(ssid) {
+    function connectToNetwork(ssid, secured) {
         root.connectingSSID = ssid
         root.promptSSID     = ""
         const esc = ssid.replace(/'/g, "'\\''")
@@ -190,8 +190,9 @@ Item {
             "nmcli --wait 30 connection up id '" + esc + "'" +
             " || nmcli --wait 30 device wifi connect '" + esc + "'"]
         _connectProc.running = false; _connectProc.running = true
-        _promptTimer.ssid = ssid
-        _promptTimer.restart()
+        // ponytail: only arm the password prompt for secured networks
+        if (secured) { _promptTimer.ssid = ssid; _promptTimer.restart() }
+        else _promptTimer.stop()
     }
 
     function connectWithPassword(ssid, pass) {
