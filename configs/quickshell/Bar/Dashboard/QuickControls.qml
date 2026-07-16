@@ -13,6 +13,11 @@ Item {
     property int  brightness: 50
     property bool eyeHealth:  false
 
+    // ponytail: expose weather data so the dashboard hero can reuse it
+    property alias weatherIcon: wxData.wIcon
+    property alias weatherTemp: wxData.temp
+    property alias weatherDesc: wxData.desc
+
     // Poll-lock flags: ignore poll results for a few seconds after a manual toggle
     property bool _lockAudio: false
     property bool _lockEye:   false
@@ -79,6 +84,22 @@ Item {
     }
     Process { id: _eyeOn;      command: ["sh", "-c", "gammastep &"]; running: false }
     Process { id: _eyeOff;     command: ["sh","-c", "pkill -f [g]ammastep"]; running: false }
+
+    // ponytail: auto night mode - on 18:00–06:00, off otherwise. Respects manual override (_lockEye).
+    function _autoNight() {
+        if (root._lockEye) return
+        const h = new Date().getHours()
+        const shouldBeOn = (h >= 18 || h < 6)
+        if (shouldBeOn && !root.eyeHealth) {
+            root.eyeHealth = true
+            _eyeOn.running = false; _eyeOn.running = true
+        } else if (!shouldBeOn && root.eyeHealth) {
+            root.eyeHealth = false
+            _eyeOff.running = false; _eyeOff.running = true
+        }
+    }
+    Component.onCompleted: _autoNight()
+    Timer { interval: 60000; running: true; repeat: true; onTriggered: root._autoNight() }
     readonly property Process _eyeProc: Process {
         command: ["sh", "-c", "pgrep -f '[g]ammastep'"]
         running: true
@@ -354,6 +375,8 @@ Item {
                 id: wxData
                 width: 1; height: 1
                 visible: false
+                // ponytail: pause geo + weather fetches while dashboard is closed
+                active: DashboardState.activeScreenName !== ""
             }
 
             Rectangle {

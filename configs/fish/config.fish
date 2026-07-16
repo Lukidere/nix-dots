@@ -134,9 +134,12 @@ end
 ##################
 ### Aliases    ###
 ##################
-# ls replacements
+# custom
+
 alias nixedit='nvim ~/dotsy/configuration.nix'
 alias nixupdate='sudo nixos-rebuild switch --flake ~/dotsy/#legion'
+alias jackserver='ssh -i ~/.ssh/id_ed25519.pub'
+# ls replacements
 alias ls='eza -al --color=always --group-directories-first --icons'
 alias la='eza -a --color=always --group-directories-first --icons'
 alias ll='eza -l --color=always --group-directories-first --icons'

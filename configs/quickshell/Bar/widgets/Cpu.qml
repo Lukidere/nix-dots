@@ -104,22 +104,22 @@ Item {
         spacing: 2
 
         ArcRing {
-            pct: root.cpuPct; icon: "\uF0E4"; label: Math.round(root.cpuPct) + "%"
+            pct: root.cpuPct; icon: "\uF0E4"
             ringColor: root.cpuPct > 80 ? Colors.color1 : root.cpuPct > 50 ? Colors.color3 : Colors.color2
             hovered: ma.containsMouse
         }
         ArcRing {
-            pct: root.ramPct; icon: "\uF1C0"; label: Math.round(root.ramPct) + "%"
+            pct: root.ramPct; icon: "\uF1C0"
             ringColor: root.ramPct > 80 ? Colors.color1 : root.ramPct > 50 ? Colors.color3 : Colors.color4
             hovered: ma.containsMouse
         }
         ArcRing {
-            pct: root.diskPct; icon: "\uF0A0"; label: Math.round(root.diskPct) + "%"
+            pct: root.diskPct; icon: "\uF0A0"
             ringColor: root.diskPct > 90 ? Colors.color1 : root.diskPct > 70 ? Colors.color3 : Colors.color5
             hovered: ma.containsMouse
         }
         ArcRing {
-            pct: root.gpuPct; icon: "\u{F43F}"; label: Math.round(root.gpuPct) + "%"
+            pct: root.gpuPct; icon: "\u{F43F}"
             ringColor: root.gpuPct > 80 ? Colors.color1 : root.gpuPct > 50 ? Colors.color3 : Colors.color6
             hovered: ma.containsMouse
         }
@@ -127,11 +127,10 @@ Item {
 
     component ArcRing: Item {
         id: ring
-        width: 44; height: 42
+        width: 44; height: 38
 
         property real   pct:       0
         property string icon:      ""
-        property string label:     ""
         property color  ringColor: Colors.color4
         property bool   hovered:   false
 
@@ -178,11 +177,5 @@ Item {
             Behavior on color { ColorAnimation { duration: 200 } }
         }
 
-        Text {
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; bottomMargin: 1 }
-            horizontalAlignment: Text.AlignHCenter
-            text: ring.label
-            font.pixelSize: 7; color: Colors.color8
-        }
     }
 }

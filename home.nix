@@ -30,6 +30,8 @@ in
     fastfetch
     findutils
     git
+    jujutsu
+    docker
     jq
     unzip
     wget

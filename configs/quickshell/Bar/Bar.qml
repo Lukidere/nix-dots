@@ -40,17 +40,6 @@ PanelWindow {
             Cpu { barScreen: root.modelData }
         }
 
-        Rectangle {
-            anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
-            anchors.verticalCenterOffset: -54
-            width: 20; height: 1; color: Colors.color8; opacity: 0.25
-        }
-        Rectangle {
-            anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
-            anchors.verticalCenterOffset: 54
-            width: 20; height: 1; color: Colors.color8; opacity: 0.25
-        }
-
         Column {
             anchors { centerIn: parent }
             spacing: 4
@@ -226,6 +215,13 @@ PanelWindow {
                         text: "Password for \u201C" + wifiWidget.promptSSID + "\u201D"
                         font.family: "Iosevka Nerd Font"; font.pixelSize: 11
                         color: Colors.foreground; wrapMode: Text.WordWrap; elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width
+                        visible: NetworkState.lastWifiError !== ""
+                        text: NetworkState.lastWifiError
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                        color: Colors.color1; wrapMode: Text.WordWrap
                     }
                     Rectangle {
                         width: parent.width; height: 30; radius: 6

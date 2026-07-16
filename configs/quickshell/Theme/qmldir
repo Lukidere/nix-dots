@@ -3,3 +3,7 @@ singleton TooltipState 1.0 TooltipState.qml
 singleton PowerState 1.0 PowerState.qml
 singleton MprisState 1.0 MprisState.qml
 singleton NetworkState 1.0 NetworkState.qml
+singleton Type 1.0 Type.qml
+singleton Space 1.0 Space.qml
+singleton Tab 1.0 Tab.qml
+SectionHead 1.0 SectionHead.qml

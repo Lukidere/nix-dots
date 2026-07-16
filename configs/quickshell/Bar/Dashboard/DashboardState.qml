@@ -31,7 +31,8 @@ QtObject {
     }
 
     property Timer _volHideTimer: Timer {
-        interval: 180
+        // ponytail: 220ms grace for diagonal mouse drift between panels
+        interval: 220
         onTriggered: root.volPanelScreen = ""
     }
 }

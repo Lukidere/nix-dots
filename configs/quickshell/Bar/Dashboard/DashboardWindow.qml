@@ -14,6 +14,11 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: panel.activeTab === 5 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
+    // ponytail: mask limits input to hover/panel rects - rest of screen click-through
+    mask: Region {
+        item: hoverWrapper
+        Region { item: volPanelArea }
+    }
 
     component HSlider: Item {
         id: hs
@@ -29,7 +34,7 @@ PanelWindow {
             Rectangle {
                 width: parent.width * Math.max(0, Math.min(1, hs.value / 100))
                 height: 4; radius: 2; color: hs.accent
-                Behavior on width { NumberAnimation { duration: 80 } }
+                Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
             }
         }
         Rectangle {
@@ -63,7 +68,7 @@ PanelWindow {
                 width: 4; radius: 2
                 height: parent.height * vs.frac
                 color: vs.accent
-                Behavior on height { NumberAnimation { duration: 80 } }
+                Behavior on height { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
             }
         }
         Rectangle {
@@ -82,10 +87,12 @@ PanelWindow {
 
     Item {
         id: volPanelArea
-        // ponytail: wide hover catch zone - panel ~108 wide, zone ~180
+        // ponytail: hover zone must cover strip's full hit area (640px tall, 12px wide on right)
+        // so cursor-on-strip also hovers this → show() cancels strip's pending hide, no flicker
         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-        width: volPanelRect.width + 80
-        height: volPanelRect.height + 60
+        // ponytail: catch zone hugs panel - strip hitH now matches volPanelRect.height (380)
+        width: volPanelRect.width + 16
+        height: volPanelRect.height + 16
 
         HoverHandler {
             onHoveredChanged: {
@@ -96,100 +103,141 @@ PanelWindow {
             }
         }
 
+        // ponytail: faux shadow - three offset rects behind panel, no Qt5Compat dep
+        Repeater {
+            model: [
+                { off: 10, op: 0.10, rad: 22 },
+                { off:  6, op: 0.18, rad: 20 },
+                { off:  2, op: 0.28, rad: 18 }
+            ]
+            delegate: Rectangle {
+                required property var modelData
+                x: volPanelRect.x - modelData.off
+                y: volPanelRect.y + modelData.off
+                width:  volPanelRect.width  + modelData.off
+                height: volPanelRect.height
+                radius: modelData.rad
+                color: Qt.rgba(0, 0, 0, modelData.op)
+                opacity: volPanelRect.opacity
+                visible: opacity > 0
+            }
+        }
+
         Rectangle {
             id: volPanelRect
-            // ponytail: narrow vertical pill, slides in from right edge
+            // ponytail: narrow vertical pill, slides in from right edge with drop-shadow
             readonly property bool _open: DashboardState.volPanelScreen === root.modelData.name
             anchors { verticalCenter: parent.verticalCenter }
-            x: _open ? (parent.width - width) : parent.width - 4
-            width: 108
-            height: 360
-            radius: 14
+            x: _open ? (parent.width - width - Space.xs) : parent.width - 4
+            width: 112
+            height: 380
+            radius: 16
             color: Qt.darker(Colors.background, 1.07)
             border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
             border.width: 1
             opacity: _open ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { NumberAnimation { duration: Space.fast } }
             Behavior on x       { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-            Row {
+
+            Column {
                 anchors {
                     top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right
-                    topMargin: 14; bottomMargin: 14; leftMargin: 10; rightMargin: 10
+                    topMargin: Space.md; bottomMargin: Space.md; leftMargin: Space.sm; rightMargin: Space.sm
                 }
-                spacing: 8
+                spacing: Space.sm
 
-                // Volume column
-                Column {
-                    width: (parent.width - 8) / 2
-                    height: parent.height
-                    spacing: 8
+                // Mini header - tells the user what this panel is
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "VOL · BRT"
+                    font.family: Type.face; font.pixelSize: Type.xs
+                    color: Colors.color8
+                }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width - Space.sm; height: 1
+                    color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.25)
+                }
 
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: quickControls.muted ? "\u{F075F}"
-                            : quickControls.volume > 66 ? "\u{F057E}"
-                            : quickControls.volume > 33 ? "\u{F0580}" : "\u{F057F}"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
-                        color: quickControls.muted ? Colors.color1 : Colors.foreground
-                    }
-                    VSlider {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: 20
-                        height: parent.height - 78
-                        value: quickControls.volume
-                        accent: quickControls.muted ? Colors.color1 : Colors.color4
-                        onMoved: function(v) { quickControls.setVolume(v) }
-                    }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: quickControls.muted ? "-" : quickControls.volume + "%"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                        color: quickControls.muted ? Colors.color1 : Colors.color6
-                    }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: 28; height: 18; radius: 9
-                        color: quickControls.micMuted
-                            ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3)
-                            : Qt.lighter(Colors.background, 1.5)
+                Row {
+                    width: parent.width
+                    height: parent.height - 24 - Space.sm * 3
+                    spacing: Space.sm
+
+                    // Volume column
+                    Column {
+                        width: (parent.width - Space.sm) / 2
+                        height: parent.height
+                        spacing: Space.sm
+
                         Text {
-                            anchors.centerIn: parent
-                            text: quickControls.micMuted ? "\u{F036D}" : "\u{F036C}"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                            color: quickControls.micMuted ? Colors.color1 : Colors.color6
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: quickControls.muted ? "\u{F075F}"
+                                : quickControls.volume > 66 ? "\u{F057E}"
+                                : quickControls.volume > 33 ? "\u{F0580}" : "\u{F057F}"
+                            font.family: Type.face; font.pixelSize: Type.xl
+                            color: quickControls.muted ? Colors.color1 : Colors.foreground
                         }
-                        MouseArea { anchors.fill: parent; onClicked: quickControls.toggleMicMute() }
+                        VSlider {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 20
+                            height: parent.height - 86
+                            value: quickControls.volume
+                            accent: quickControls.muted ? Colors.color1 : Colors.color4
+                            onMoved: function(v) { quickControls.setVolume(v) }
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: quickControls.muted ? "-" : quickControls.volume + "%"
+                            font.family: Type.face; font.pixelSize: Type.xs
+                            color: quickControls.muted ? Colors.color1 : Colors.color6
+                        }
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 36; height: 24; radius: 12
+                            color: quickControls.micMuted
+                                ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3)
+                                : Qt.lighter(Colors.background, 1.5)
+                            Behavior on color { ColorAnimation { duration: Space.fast } }
+                            Text {
+                                anchors.centerIn: parent
+                                text: quickControls.micMuted ? "\u{F036D}" : "\u{F036C}"
+                                font.family: Type.face; font.pixelSize: Type.md
+                                color: quickControls.micMuted ? Colors.color1 : Colors.color6
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: quickControls.toggleMicMute() }
+                        }
                     }
-                }
 
-                // Brightness column
-                Column {
-                    width: (parent.width - 8) / 2
-                    height: parent.height
-                    spacing: 8
+                    // Brightness column
+                    Column {
+                        width: (parent.width - Space.sm) / 2
+                        height: parent.height
+                        spacing: Space.sm
 
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: quickControls.brightness > 66 ? "\u{F00DF}"
-                            : quickControls.brightness > 33 ? "\u{F00DE}" : "\u{F00DD}"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 18
-                        color: Colors.foreground
-                    }
-                    VSlider {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: 20
-                        height: parent.height - 78
-                        value: quickControls.brightness
-                        accent: Colors.color3
-                        onMoved: function(v) { quickControls.setBrightness(v) }
-                    }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: quickControls.brightness + "%"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                        color: Colors.color6
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: quickControls.brightness > 66 ? "\u{F00DF}"
+                                : quickControls.brightness > 33 ? "\u{F00DE}" : "\u{F00DD}"
+                            font.family: Type.face; font.pixelSize: Type.xl
+                            color: Colors.foreground
+                        }
+                        VSlider {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 20
+                            height: parent.height - 86
+                            value: quickControls.brightness
+                            accent: Colors.color3
+                            onMoved: function(v) { quickControls.setBrightness(v) }
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: quickControls.brightness + "%"
+                            font.family: Type.face; font.pixelSize: Type.xs
+                            color: Colors.color6
+                        }
                     }
                 }
             }
@@ -199,13 +247,15 @@ PanelWindow {
     // Hover wrapper - wide catch zone above panel
     Item {
         id: hoverWrapper
-        // ponytail: wider buffer (40 px) so mouse catches easily near top edge
-        x: Math.round((parent.width - panelW - 80) / 2)
+        // ponytail: catchW == panelW - strip hitW uses same formula, perfect overlap, no overflow
+        x: Math.round((parent.width - catchW) / 2)
         y: 0
-        width: panelW + 80
+        width: catchW
         height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 16 : 22
 
-        readonly property int panelW: Math.min(420, Math.max(340, Math.round(parent.width * 0.22)))
+        // ponytail: bumped 22% → 26% to accommodate 56 px sidebar rail
+        readonly property int panelW: Math.min(520, Math.max(440, Math.round(parent.width * 0.26)))
+        readonly property int catchW: panelW
 
         HoverHandler {
             onHoveredChanged: {
@@ -216,7 +266,8 @@ PanelWindow {
 
         Rectangle {
             id: panel
-            x: 10
+            // ponytail: center inside wider catch zone (catchW), wrapper no longer hugs panel
+            x: Math.round((hoverWrapper.catchW - hoverWrapper.panelW) / 2)
             y: DashboardState.activeScreenName === root.modelData.name ? 8 : -14
             width: hoverWrapper.panelW; height: 700
             radius: 14
@@ -230,139 +281,167 @@ PanelWindow {
             Behavior on y       { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
             property int activeTab: 0
+            // ponytail: per-tab accent - sweeps across panel on tab switch
+            property color accent: Tab.accent(activeTab)
+            Behavior on accent { ColorAnimation { duration: Space.med } }
 
+            // ── HERO HEADER: weather left, time right ────────────────
             Item {
-                id: headerBar
+                id: heroHeader
                 anchors { left: parent.left; right: parent.right; top: parent.top }
-                anchors { leftMargin: 18; rightMargin: 18; topMargin: 14 }
-                height: 56
+                anchors { leftMargin: Space.lg; rightMargin: Space.lg; topMargin: Space.md }
+                height: 110
 
-                // Greeting (top-left) with user icon
-                Row {
-                    anchors { left: parent.left; top: parent.top }
-                    spacing: 5
-                    Text {
+                // Left half - weather (reuses wxData inside QuickControls)
+                Item {
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: parent.width / 2
+                    Row {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\u{F0004}"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                        color: Colors.color4
-                    }
-                    Text {
-                        id: greetingText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: {
-                            const h = parseInt(Qt.formatTime(new Date(), "hh"))
-                            return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+                        spacing: Space.md
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: quickControls.weatherIcon
+                            font.family: Type.face; font.pixelSize: 48
+                            // ponytail: fixed sun-yellow regardless of active tab
+                            color: Colors.color3
                         }
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                        color: Colors.color8
-                        Timer { interval: 60000; running: true; repeat: true
-                                onTriggered: {
-                                    const h = parseInt(Qt.formatTime(new Date(), "hh"))
-                                    greetingText.text = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
-                                }
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+                            Text {
+                                text: quickControls.weatherTemp
+                                font.family: Type.face; font.pixelSize: 32; font.bold: true
+                                color: Colors.foreground
+                            }
+                            Text {
+                                text: quickControls.weatherDesc
+                                font.family: Type.face; font.pixelSize: Type.sm
+                                color: Colors.color8
+                                width: Math.max(60, heroHeader.width / 2 - 80)
+                                elide: Text.ElideRight
+                            }
                         }
                     }
                 }
 
-                // Large time (bottom-left)
-                Text {
-                    id: headerTime
-                    anchors { left: parent.left; bottom: parent.bottom }
-                    text: Qt.formatTime(new Date(), "hh:mm")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 28; font.bold: true
-                    color: Colors.foreground
-                    Timer { interval: 10000; running: true; repeat: true
-                            onTriggered: headerTime.text = Qt.formatTime(new Date(), "hh:mm") }
-                }
-
-                // Date (bottom-right)
-                Text {
-                    anchors { right: parent.right; bottom: parent.bottom }
-                    text: Qt.formatDate(new Date(), "ddd, d MMM yyyy")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                    color: Colors.color8
+                // Right half - greeting + time + date
+                Item {
+                    anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+                    width: parent.width / 2
+                    Column {
+                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                        spacing: 2
+                        Text {
+                            id: greetingText
+                            anchors.right: parent.right
+                            text: {
+                                const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                                return (h < 12 ? "GOOD MORNING" : h < 18 ? "GOOD AFTERNOON" : "GOOD EVENING")
+                            }
+                            font.family: Type.face; font.pixelSize: Type.xs; font.letterSpacing: 1.6
+                            color: Colors.color8
+                            Timer { interval: 60000; running: true; repeat: true
+                                    onTriggered: {
+                                        const h = parseInt(Qt.formatTime(new Date(), "hh"))
+                                        greetingText.text = (h < 12 ? "GOOD MORNING" : h < 18 ? "GOOD AFTERNOON" : "GOOD EVENING")
+                                    }
+                            }
+                        }
+                        Text {
+                            id: headerTime
+                            anchors.right: parent.right
+                            text: Qt.formatTime(new Date(), "hh:mm")
+                            font.family: Type.face; font.pixelSize: 42; font.bold: true
+                            color: Colors.foreground
+                            Timer { interval: 10000; running: true; repeat: true
+                                    onTriggered: headerTime.text = Qt.formatTime(new Date(), "hh:mm") }
+                        }
+                        Text {
+                            anchors.right: parent.right
+                            text: Qt.formatDate(new Date(), "ddd, d MMM yyyy")
+                            font.family: Type.face; font.pixelSize: Type.sm
+                            color: Colors.color8
+                        }
+                    }
                 }
             }
 
-            // Accent underline below header
+            // Hairline gradient under hero (accent → transparent)
             Rectangle {
-                anchors { left: parent.left; right: parent.right; top: headerBar.bottom }
-                anchors { leftMargin: 18; rightMargin: 18; topMargin: 6 }
+                anchors { left: parent.left; right: parent.right; top: heroHeader.bottom }
+                anchors { leftMargin: Space.lg; rightMargin: Space.lg; topMargin: Space.xs }
                 height: 1
-                color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
-            }
-
-            // Subtle top gradient accent
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; top: parent.top }
-                height: 100; radius: 14
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.07) }
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Qt.rgba(panel.accent.r, panel.accent.g, panel.accent.b, 0.55) }
+                    GradientStop { position: 0.6; color: Qt.rgba(panel.accent.r, panel.accent.g, panel.accent.b, 0.15) }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
 
-            Row {
-                id: tabRow
-                anchors { left: parent.left; right: parent.right; top: headerBar.bottom }
-                anchors { leftMargin: 14; rightMargin: 14; topMargin: 8 }
-                spacing: 4
+            // \u2500\u2500 SIDEBAR RAIL (icon-only nav, 56 px wide) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            Item {
+                id: sidebar
+                anchors {
+                    left: parent.left; top: heroHeader.bottom; bottom: parent.bottom
+                    leftMargin: Space.sm; topMargin: Space.md; bottomMargin: Space.md
+                }
+                width: 56
+                readonly property int slotH: Math.floor(height / 6)
+
+                // Animated active indicator
+                Rectangle {
+                    width: 4; height: sidebar.slotH - 16; radius: 2
+                    x: 0
+                    y: panel.activeTab * sidebar.slotH + 8
+                    color: panel.accent
+                    Behavior on y     { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation  { duration: Space.med } }
+                }
 
                 Repeater {
-                    model: ["\uF200", "\uF001", "\uF03E", "\uF0A2", "\uF085", "\uF253"]
-                    delegate: Rectangle {
-                        required property int    index
-                        required property string modelData
-                        width: (tabRow.width - 20) / 6
-                        height: 44; radius: 8
-                        color: tabBtnMa.containsMouse && panel.activeTab !== index
-                             ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.1)
-                             : "transparent"
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Column {
+                    model: 6
+                    delegate: Item {
+                        id: railSlot
+                        required property int index
+                        width: sidebar.width; height: sidebar.slotH
+                        y: index * sidebar.slotH
+
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            radius: 10
+                            color: panel.activeTab === railSlot.index
+                                ? Qt.rgba(panel.accent.r, panel.accent.g, panel.accent.b, 0.12)
+                                : railMa.containsMouse
+                                    ? Qt.rgba(panel.accent.r, panel.accent.g, panel.accent.b, 0.08)
+                                    : "transparent"
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
+                        Text {
                             anchors.centerIn: parent
-                            spacing: 1
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: parent.parent.modelData
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 14
-                                color: panel.activeTab === parent.parent.index ? Colors.color4 : Colors.color8
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                            }
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: (["ctrl","media","wall","notif","sys","pomo"])[parent.parent.index]
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 7
-                                color: panel.activeTab === parent.parent.index ? Colors.color4 : Colors.color6
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                            }
+                            text: Tab.icon(railSlot.index)
+                            font.family: Type.face; font.pixelSize: Type.xl
+                            color: panel.activeTab === railSlot.index ? panel.accent : Colors.color8
+                            Behavior on color { ColorAnimation { duration: Space.med } }
                         }
                         MouseArea {
-                            id: tabBtnMa; anchors.fill: parent; hoverEnabled: true
-                            onClicked: panel.activeTab = index
+                            id: railMa
+                            anchors.fill: parent; hoverEnabled: true
+                            onClicked: panel.activeTab = railSlot.index
                         }
                     }
                 }
-            }
-
-            // Sliding active-tab underline
-            Rectangle {
-                property real tabW: (tabRow.width - 20) / 6
-                x: tabRow.x + panel.activeTab * (tabW + 4)
-                y: tabRow.y + tabRow.height - 2
-                width: tabW; height: 2; radius: 1
-                color: Colors.color4
-                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
             }
 
             Item {
                 id: contentArea
                 anchors {
-                    left: parent.left; right: parent.right
-                    top: tabRow.bottom; bottom: parent.bottom
-                    leftMargin: 14; rightMargin: 14
-                    topMargin: 10; bottomMargin: 14
+                    left: sidebar.right; right: parent.right
+                    top: heroHeader.bottom; bottom: parent.bottom
+                    leftMargin: Space.md; rightMargin: Space.md
+                    topMargin: Space.md + Space.sm; bottomMargin: Space.md
                 }
                 clip: true
 
@@ -372,15 +451,11 @@ PanelWindow {
                     opacity: panel.activeTab === 0 ? 1 : 0
                     visible: opacity > 0
                     clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
                     Column {
-                        width: parent.width; spacing: 10
+                        width: parent.width; spacing: Space.md
 
-                        Row {
-                            spacing: 6
-                            Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color4; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "CONTROLS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                        }
+                        SectionHead { label: "CONTROLS"; ico: Tab.icon(0); accent: panel.accent }
                         QuickControls { id: quickControls; width: parent.width }
                     }
                 }
@@ -390,7 +465,7 @@ PanelWindow {
                     anchors.fill: parent
                     opacity: panel.activeTab === 1 ? 1 : 0
                     visible: opacity > 0
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
 
                     // Ambient album-art tint behind media content
                     Image {
@@ -425,7 +500,7 @@ PanelWindow {
                     anchors.fill: parent
                     opacity: panel.activeTab === 2 ? 1 : 0
                     visible: opacity > 0
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
                     property bool _loaded: false
                     onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
                     Loader {
@@ -441,20 +516,20 @@ PanelWindow {
                     opacity: panel.activeTab === 3 ? 1 : 0
                     visible: opacity > 0
                     clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
                     Column {
-                        width: parent.width; spacing: 10
+                        width: parent.width; spacing: Space.md
 
+                        SectionHead { label: "NOTIFICATIONS"; ico: ""; accent: panel.accent }
                         NotificationCenter {
                             width: parent.width
-                            height: Math.round(contentArea.height * 0.55)
+                            height: Math.round(contentArea.height * 0.50)
                         }
 
-                        Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-
+                        SectionHead { label: "CLIPBOARD"; ico: ""; accent: panel.accent }
                         ClipboardHistory {
                             width: parent.width
-                            height: Math.round(contentArea.height * 0.35)
+                            height: Math.round(contentArea.height * 0.34)
                         }
                     }
                 }
@@ -466,7 +541,7 @@ PanelWindow {
                     opacity: panel.activeTab === 4 ? 1 : 0
                     visible: opacity > 0
                     clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
                     property bool _loaded: false
                     onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
                     Loader {
@@ -478,19 +553,12 @@ PanelWindow {
                                 clip: true
                                 Column {
                                     id: sysCol
-                                    width: parent.width; spacing: 10
-                                    Row {
-                                        spacing: 6
-                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color3; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: "SYSTEM"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                                    }
+                                    width: parent.width; spacing: Space.md
+
+                                    SectionHead { label: "OVERVIEW"; ico: ""; accent: panel.accent }
                                     SystemInfo { width: parent.width }
-                                    Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-                                    Row {
-                                        spacing: 6
-                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color2; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: "PERFORMANCE"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                                    }
+
+                                    SectionHead { label: "PERFORMANCE"; ico: ""; accent: panel.accent }
                                     Performance { width: parent.width }
                                 }
                             }
@@ -505,7 +573,7 @@ PanelWindow {
                     opacity: panel.activeTab === 5 ? 1 : 0
                     visible: opacity > 0
                     clip: true
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
                     property bool _loaded: false
                     onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
                     Loader {
@@ -518,19 +586,12 @@ PanelWindow {
                                 boundsBehavior: Flickable.StopAtBounds
                                 Column {
                                     id: pomoTaskCol
-                                    width: parent.width; spacing: 10
-                                    Row {
-                                        spacing: 6
-                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color1; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: "POMODORO"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                                    }
+                                    width: parent.width; spacing: Space.md
+
+                                    SectionHead { label: "POMODORO"; ico: ""; accent: panel.accent }
                                     PomodoroTimer { width: parent.width }
-                                    Rectangle { width: parent.width; height: 1; color: Colors.color8; opacity: 0.3 }
-                                    Row {
-                                        spacing: 6
-                                        Rectangle { width: 3; height: 10; radius: 1.5; color: Colors.color5; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: "TASKS"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.color6 }
-                                    }
+
+                                    SectionHead { label: "TASKS"; ico: ""; accent: panel.accent }
                                     TodoList { width: parent.width }
                                 }
                             }

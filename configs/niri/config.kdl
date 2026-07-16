@@ -1,4 +1,12 @@
 spawn-at-startup "awww-daemon"
+// Lock handling: `lock` fires on loginctl lock-session (lid-close when docked, manual bind),
+// `before-sleep` locks ahead of suspend so lid-open lands on gtklock.
+// pidof guard: don't stack a second gtklock when both events fire.
+spawn-at-startup "swayidle" "-w" \
+    "timeout" "600" "pidof gtklock || gtklock -d" \
+    "timeout" "900" "niri msg action power-off-monitors" \
+    "before-sleep" "pidof gtklock || gtklock -d" \
+    "lock" "pidof gtklock || gtklock -d"
 
 // General Settings
 prefer-no-csd
@@ -60,6 +68,7 @@ binds {
     MOD+S            hotkey-overlay-title="Show shortcuts"                    { show-hotkey-overlay; }
     MOD+SHIFT+E      hotkey-overlay-title="Logout"                            { quit; }
     MOD+ALT+W        hotkey-overlay-title="Restart Quickshell"                { spawn "bash" "/home/dhm/.config/quickshell/scripts/restart.sh"; }
+    MOD+ALT+L        hotkey-overlay-title="Lock screen"                       { spawn "loginctl" "lock-session"; }
 
     // ── Launch apps ──────────────────────────────────────────────────
     MOD+RETURN       hotkey-overlay-title="Terminal (ghostty)"                { spawn-sh "ghostty"; }

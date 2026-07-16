@@ -29,13 +29,26 @@ PanelWindow {
     property var    history:       []
     property int    historyIndex:  -1
     property var    bookmarks: [
-        { name: "Home",      path: homeDir,                icon: "" },
-        { name: "Documents", path: homeDir + "/Documents", icon: "" },
-        { name: "Downloads", path: homeDir + "/Downloads", icon: "" },
-        { name: "Music",     path: homeDir + "/Music",     icon: "" },
-        { name: "Pictures",  path: homeDir + "/Pictures",  icon: "" },
-        { name: "Videos",    path: homeDir + "/Videos",    icon: "" },
+        { name: "Home", path: homeDir, icon: "\uf015" },
     ]
+
+    // ponytail: sidebar lists only dirs that exist - checked once at startup
+    readonly property Process _bmProc: Process {
+        command: ["sh", "-c", 'for d in Documents Downloads Music Pictures Videos; do [ -d "$HOME/$d" ] && echo "$d"; done; true']
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const icons = {
+                    Documents: "\uf15c", Downloads: "\uf019", Music: "\uf001",
+                    Pictures: "\uf03e", Videos: "\uf008"
+                }
+                const bms = [{ name: "Home", path: root.homeDir, icon: "\uf015" }]
+                for (const d of this.text.trim().split("\n").filter(Boolean))
+                    bms.push({ name: d, path: root.homeDir + "/" + d, icon: icons[d] || "\uf07b" })
+                root.bookmarks = bms
+            }
+        }
+    }
 
     readonly property var filteredItems: {
         if (!searchText) return items

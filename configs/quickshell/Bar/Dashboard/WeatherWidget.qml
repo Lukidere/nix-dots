@@ -6,6 +6,9 @@ Item {
     id: root
     height: col.implicitHeight
 
+    // ponytail: gates geo + weather processes - flip false when consumer is hidden
+    property bool   active:    true
+
     property string temp:      "--"
     property string feelsLike: "--"
     property string desc:      "Loading..."
@@ -52,7 +55,7 @@ Item {
     // Step 1: get location
     readonly property Process _geoProc: Process {
         command: ["sh", "-c", "curl -sf 'https://ipwho.is/' 2>/dev/null"]
-        running: true
+        running: root.active
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -118,7 +121,8 @@ Item {
     }
 
     Timer {
-        interval: 900000; running: true; repeat: true
+        interval: 900000; repeat: true
+        running: root.active
         onTriggered: { root._weatherProc.running = false; root._weatherProc.running = true }
     }
 

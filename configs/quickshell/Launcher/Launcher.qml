@@ -52,7 +52,8 @@ PanelWindow {
                     root.allApps = JSON.parse(this.text).map(a => ({
                         name: a.n, genericName: a.g || "", icon: a.i || "",
                         exec: a.e || "", desktopId: a.d,
-                        categories: a.c || []
+                        categories: a.c || [],
+                        source: a.s || "native"
                     }))
                     if (root.visible) root.filterApps(searchInput.text)
                 } catch(e) {}
@@ -100,7 +101,8 @@ PanelWindow {
                            : "image://theme/application-x-executable",
                 kind: "app", appIdx: allApps.indexOf(a),
                 desktopId: a.desktopId,
-                exec: a.exec
+                exec: a.exec,
+                source: a.source
             })
         })
 
@@ -133,7 +135,7 @@ PanelWindow {
 
         if (item.kind === "calc") {
             // Copy result to clipboard
-            launchProc.command = ["sh", "-c", "echo -n " + JSON.stringify(item.label.slice(2)) + " | wl-copy"]
+            launchProc.command = ["setsid", "-f", "sh", "-c", "echo -n " + JSON.stringify(item.label.slice(2)) + " | wl-copy"]
             launchProc.running = false; launchProc.running = true
             root.visible = false
             return
@@ -151,10 +153,12 @@ PanelWindow {
                 .replace(/\s+--\s*$/g, "")
                 .replace(/\s+/g, " ")
                 .trim()
-            launchProc.command = ["sh", "-c", exec + " &"]
+            // ponytail: setsid -f detaches into new session so SIGTERM on launchProc
+            //           doesn't propagate to flatpak run / long-lived wrappers (e.g. sober)
+            launchProc.command = ["setsid", "-f", "sh", "-c", exec]
             launchProc.running = false; launchProc.running = true
         } else {
-            launchProc.command = ["sh", "-c", "xdg-open " + JSON.stringify(item.filePath) + " &"]
+            launchProc.command = ["setsid", "-f", "sh", "-c", "xdg-open " + JSON.stringify(item.filePath)]
             launchProc.running = false; launchProc.running = true
         }
         root.visible = false
@@ -268,10 +272,27 @@ PanelWindow {
                         }
                         Column {
                             anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                            Text {
-                                text: modelData.label || ""
-                                font.pixelSize: 13; font.family: "Iosevka Nerd Font"
-                                color: resultsList.currentIndex === index ? Colors.background : Colors.foreground
+                            Row {
+                                spacing: 6
+                                Text {
+                                    text: modelData.label || ""
+                                    font.pixelSize: 13; font.family: "Iosevka Nerd Font"
+                                    color: resultsList.currentIndex === index ? Colors.background : Colors.foreground
+                                }
+                                // ponytail: flatpak badge - small pill so user knows what'll run
+                                Rectangle {
+                                    visible: modelData.source === "flatpak"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: fpText.implicitWidth + 10; height: 14; radius: 7
+                                    color: Qt.rgba(Colors.color5.r, Colors.color5.g, Colors.color5.b, 0.22)
+                                    Text {
+                                        id: fpText
+                                        anchors.centerIn: parent
+                                        text: "FLATPAK"
+                                        font.pixelSize: 8; font.family: "Iosevka Nerd Font"; font.bold: true
+                                        color: Colors.color5
+                                    }
+                                }
                             }
                             Text {
                                 text: modelData.sub || ""; font.pixelSize: 11

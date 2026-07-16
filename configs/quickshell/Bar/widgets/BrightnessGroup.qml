@@ -24,7 +24,7 @@ Item {
                         if (m && !pairedMACs.includes(m[1])) devs.push({ mac: m[1], name: m[2].trim() })
                     }
                     root.scannedDevs = devs
-                } catch(e) {}
+                } catch(e) { console.warn("bt scan parse:", e) }
             }
         }
     }
@@ -36,7 +36,14 @@ Item {
             onTriggered: { root.scanning = false; _scanOff.running = false; _scanOff.running = true } }
 
     Process { id: _btAction; running: false
-        onRunningChanged: { if (!running) root.busyMAC = "" } }
+        stderr: StdioCollector {}
+        onExited: (exitCode, exitStatus) => {
+            root.busyMAC = ""
+            if (exitCode !== 0) {
+                const err = (stderr.text || "").trim()
+                NetworkState.lastBtError = err !== "" ? err.split("\n")[0] : "pair failed"
+            }
+        } }
 
     Connections { target: NetworkState; function onPairedDevsChanged() { root.busyMAC = "" } }
 

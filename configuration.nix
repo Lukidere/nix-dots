@@ -89,6 +89,13 @@ in
   services.usbmuxd.enable = true;
   services.libinput.enable = true; # Touchpad support
   services.power-profiles-daemon.enable = true;
+  # Lid: on battery/AC → suspend (swayidle locks before sleep);
+  # docked (external monitor attached) → lock only, session stays on the monitor
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "suspend";
+    HandleLidSwitchDocked = "lock";
+  };
 
   # ==========================================
   # 4. Networking & Time
@@ -137,7 +144,6 @@ in
     ];
     config = {
       niri = {
-        default = [ "gtk" ];
         "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
         "org.freedesktop.impl.portal.RemoteDesktop" = [ "gnome" ];
       };
@@ -202,7 +208,7 @@ in
       PermitRootLogin = "no";
     };
   };
-
+  virtualisation.docker.enable = true;
   # ==========================================
   # 10. System Packages
   # ==========================================
@@ -230,6 +236,7 @@ in
     imv
     mpv
     gtklock
+    swayidle
     unstable.awww
     # --- Audio & Media ---
     imagemagick
@@ -243,17 +250,18 @@ in
     cargo
     cargo-leptos
     gcc
+    opencode
     nixd
     pyright
-    nodePackages.bash-language-server
-    nodePackages.typescript-language-server
+    bash-language-server
+    typescript-language-server
     lua-language-server
     ruff
     deadnix
     nixfmt-rfc-style
     shfmt
     shellcheck
-    nodePackages.prettier
+    prettier
     stylua
     neovim
     nodejs_24
@@ -280,5 +288,5 @@ in
   # ==========================================
   # 11. System State
   # ==========================================
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.05";
 }

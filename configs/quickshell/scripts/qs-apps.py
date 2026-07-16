@@ -75,12 +75,20 @@ def resolve_icon(name):
     return ''
 
 
+# ponytail: classify by dir - native always wins over flatpak when names collide
+FLATPAK_DIRS = {
+    '/var/lib/flatpak/exports/share/applications',
+    os.path.expanduser('~/.local/share/flatpak/exports/share/applications'),
+}
+
 apps = []
-seen = set()
+seen_ids = set()
+seen_names = {}  # name.lower() -> index into apps
 
 for d in DIRS:
     if not os.path.isdir(d):
         continue
+    source = 'flatpak' if d in FLATPAK_DIRS else 'native'
     for path in glob.glob(os.path.join(d, '*.desktop')):
         try:
             data = {}
@@ -107,9 +115,15 @@ for d in DIRS:
             if not name:
                 continue
             desktop_id = os.path.basename(path)
-            if desktop_id in seen:
+            if desktop_id in seen_ids:
                 continue
-            seen.add(desktop_id)
+            seen_ids.add(desktop_id)
+
+            exec_line = data.get('Exec', '')
+            # For flatpak entries with X-Flatpak set, prefer the canonical command
+            flatpak_id = data.get('X-Flatpak', '')
+            if source == 'flatpak' and flatpak_id and not exec_line.startswith('flatpak run'):
+                exec_line = f'flatpak run {flatpak_id}'
 
             raw_cats = [c.strip() for c in data.get('Categories', '').split(';') if c.strip()]
             mapped = list({CATEGORY_MAP[c] for c in raw_cats if c in CATEGORY_MAP})
@@ -117,14 +131,22 @@ for d in DIRS:
             icon_name = data.get('Icon', '')
             icon_path = resolve_icon(icon_name)
 
-            apps.append({
+            entry = {
                 'n': name,
                 'g': data.get('GenericName', ''),
                 'i': icon_path,
-                'e': data.get('Exec', ''),
+                'e': exec_line,
                 'd': desktop_id,
                 'c': mapped,
-            })
+                's': source,
+            }
+
+            # Dedupe by name - DIRS order lists native before flatpak, so first wins
+            key = name.lower()
+            if key in seen_names:
+                continue
+            seen_names[key] = len(apps)
+            apps.append(entry)
         except Exception:
             pass
 

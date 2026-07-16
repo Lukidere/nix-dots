@@ -10,10 +10,12 @@ Item {
     property string _lastClip: ""
 
     // Watch clipboard via wl-paste (works on Wayland without focus)
+    // ponytail: event-driven only - removed 3s fallback timer; restart if watcher dies
     Process {
         id: clipWatcher
         command: ["wl-paste", "--watch", "cat"]
         running: true
+        onRunningChanged: if (!running) running = true
         stdout: StdioCollector {
             onStreamFinished: {
                 const clip = this.text.trim()
@@ -29,28 +31,6 @@ Item {
             }
         }
     }
-
-    // Also poll periodically in case watcher misses something
-    readonly property Process _clipPoll: Process {
-        command: ["wl-paste", "--no-newline"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const clip = this.text.trim()
-                if (clip !== "" && clip !== root._lastClip) {
-                    root._lastClip = clip
-                    const entry = {
-                        text: clip,
-                        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
-                    }
-                    let filtered = root.entries.filter(e => e.text !== clip)
-                    root.entries = [entry].concat(filtered).slice(0, 50)
-                }
-            }
-        }
-    }
-    Timer { interval: 3000; running: true; repeat: true
-            onTriggered: { root._clipPoll.running = false; root._clipPoll.running = true } }
 
     Process { id: _clipCopy; running: false }
 
