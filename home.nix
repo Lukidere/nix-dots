@@ -35,6 +35,7 @@ in
     jq
     unzip
     wget
+    gh
     zoxide
     #---- SHELL ----#
     ranger
