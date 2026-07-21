@@ -10,12 +10,18 @@ Item {
     property string _lastClip: ""
 
     // Watch clipboard via wl-paste (works on Wayland without focus)
-    // ponytail: event-driven only - removed 3s fallback timer; restart if watcher dies
+    // ponytail: event-driven only - restart if watcher dies via backoff timer
+    Timer {
+        id: clipRestartTimer
+        interval: 2000; repeat: false
+        onTriggered: clipWatcher.running = true
+    }
+
     Process {
         id: clipWatcher
         command: ["wl-paste", "--watch", "cat"]
         running: true
-        onRunningChanged: if (!running) running = true
+        onRunningChanged: if (!running) clipRestartTimer.start()
         stdout: StdioCollector {
             onStreamFinished: {
                 const clip = this.text.trim()
@@ -116,7 +122,7 @@ Item {
                         id: clipMa; anchors.fill: parent; hoverEnabled: true
                         onClicked: {
                             root._lastClip = entry.text
-                            _clipCopy.command = ["sh", "-c", "printf '%s' '" + entry.text.replace(/'/g, "'\\''") + "' | wl-copy"]
+                            _clipCopy.command = ["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", entry.text]
                             _clipCopy.running = false; _clipCopy.running = true
                         }
                     }

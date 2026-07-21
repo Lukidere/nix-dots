@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import Quickshell.Io
 import "../../Theme"
 
@@ -6,6 +7,16 @@ Item {
     id: root
 
     property var wallpapers: []
+    readonly property string _home: StandardPaths.writableLocation(StandardPaths.HomeLocation).toString().replace(/^file:\/\//, "")
+    readonly property string wallpaperRoot: _home + "/.config/wallpapers"
+    readonly property string thumbnailCacheDir: _home + "/.cache/thumbnails/bgselector"
+
+    function getCachedThumbPath(fullPath) {
+        const relPath = fullPath.substring(wallpaperRoot.length + 1)
+        const cacheName = relPath.replace(/\//g, "_").replace(/\.[^.]+$/, ".jpg")
+        const thumbPath = thumbnailCacheDir + "/" + cacheName
+        return thumbPath
+    }
 
     function wallustThemeName(path) {
         var parts = path.split("/")
@@ -32,21 +43,52 @@ Item {
     }
 
     readonly property Process _listProc: Process {
-        command: ["sh", "-c",
-            "find /home/dhm/.config/wallpapers -maxdepth 3" +
-            " \\( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.webp' \\)" +
-            " 2>/dev/null | sort"
-        ]
+        command: ["find", root.wallpaperRoot, "-maxdepth", "3", "-type", "f",
+                  "(", "-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.webp", "-o", "-iname", "*.gif", ")"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
-                root.wallpapers = this.text.trim().split("\n").filter(Boolean)
+                root.wallpapers = this.text.trim().split("\n").filter(Boolean).sort()
             }
+        }
+    }
+
+    readonly property Process _cacheWarmProc: Process {
+        running: false
+    }
+
+    Timer {
+        interval: 1
+        running: true
+        onTriggered: {
+            const wallDir = root.wallpaperRoot
+            const cacheDir = root.thumbnailCacheDir
+            _cacheWarmProc.command = ["sh", "-c",
+                "mkdir -p " + cacheDir + " && " +
+                "find " + wallDir + " -maxdepth 3 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' \\) " +
+                "| while read img; do " +
+                "  rel_path=\"${img#" + wallDir + "/}\"; " +
+                "  cache_name=\"${rel_path//\\//_}\"; " +
+                "  cache_name=\"${cache_name%.*}.jpg\"; " +
+                "  cache_file=" + cacheDir + "/$cache_name; " +
+                "  [ -f \"$cache_file\" ] || ( " +
+                "    if [[ \"$img\" =~ \\.(gif|GIF)$ ]]; then " +
+                "      magick \"$img[0]\" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage \"$cache_file\" 2>/dev/null; " +
+                "    else " +
+                "      magick \"$img\" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage \"$cache_file\" 2>/dev/null; " +
+                "    fi " +
+                "  ); " +
+                "done"
+            ]
+            _cacheWarmProc.running = false
+            _cacheWarmProc.running = true
+            this.running = false
         }
     }
 
     Process { id: wallustProc; running: false }
     Process { id: awwwProc; running: false }
+    Timer { id: wallustDelayTimer; interval: 500; repeat: false; onTriggered: wallustProc.running = true }
 
     Text {
         id: header
@@ -56,61 +98,55 @@ Item {
         color: Colors.color6
     }
 
-    Flickable {
-        id: flick
+    GridView {
+        id: gridView
         anchors { left: parent.left; right: scrollBar.left; rightMargin: 4; top: header.bottom; bottom: parent.bottom; topMargin: 8 }
-        contentHeight: thumbFlow.implicitHeight
+        cellWidth: Math.floor((width - 8) / 3)
+        cellHeight: cellWidth * 0.625
+        model: root.wallpapers
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        cacheBuffer: cellHeight * 2
 
-        WheelHandler {
-            onWheel: function(event) {
-                flick.contentY = Math.max(0, Math.min(flick.contentHeight - flick.height,
-                    flick.contentY - event.angleDelta.y))
+        delegate: Item {
+            required property string modelData
+            required property int index
+            width: gridView.cellWidth
+            height: gridView.cellHeight
+
+            Image {
+                id: thumbImg
+                anchors.fill: parent
+                source: "file://" + root.getCachedThumbPath(modelData)
+                sourceSize.width: 330
+                sourceSize.height: 540
+                fillMode: Image.PreserveAspectCrop
+                smooth: true; mipmap: true; asynchronous: true; clip: true
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        source = "file://" + modelData
+                    }
+                }
             }
-        }
-
-        Grid {
-            id: thumbFlow
-            width: flick.width
-            columns: 3
-            spacing: 4
-
-            Repeater {
-                model: root.wallpapers
-                delegate: Item {
-                    required property string modelData
-                    width: Math.floor((thumbFlow.width - 8) / 3)
-                    height: width * 0.625
-
-                    Image {
-                        anchors.fill: parent
-                        source: "file://" + modelData
-                        sourceSize.width: 180
-                        sourceSize.height: 120
-                        fillMode: Image.PreserveAspectCrop
-                        smooth: true; mipmap: true; asynchronous: true; clip: true
+            Rectangle {
+                anchors.fill: parent; radius: 4; color: "transparent"
+                border.color: wMa.containsMouse ? Colors.color4 : "transparent"
+                border.width: 2
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+            }
+            MouseArea {
+                id: wMa; anchors.fill: parent; hoverEnabled: true
+                onClicked: {
+                    awwwProc.command = ["awww", "img", modelData]
+                    awwwProc.running = false; awwwProc.running = true
+                    var themeName = root.wallustThemeName(modelData)
+                    wallustDelayTimer.stop()
+                    if (themeName) {
+                        wallustProc.command = ["wallust", "theme", themeName]
+                    } else {
+                        wallustProc.command = ["wallust", "run", modelData]
                     }
-                    Rectangle {
-                        anchors.fill: parent; radius: 4; color: "transparent"
-                        border.color: wMa.containsMouse ? Colors.color4 : "transparent"
-                        border.width: 2
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
-                    }
-                    MouseArea {
-                        id: wMa; anchors.fill: parent; hoverEnabled: true
-                        onClicked: {
-                            awwwProc.command = ["awww", "img", modelData]
-                            awwwProc.running = false; awwwProc.running = true
-                            var themeName = root.wallustThemeName(modelData)
-                            if (themeName) {
-                                wallustProc.command = ["sh", "-c", "sleep 0.5 && wallust theme " + JSON.stringify(themeName)]
-                            } else {
-                                wallustProc.command = ["sh", "-c", "sleep 0.5 && wallust run " + JSON.stringify(modelData)]
-                            }
-                            wallustProc.running = false; wallustProc.running = true
-                        }
-                    }
+                    wallustDelayTimer.start()
                 }
             }
         }
@@ -120,29 +156,29 @@ Item {
     Rectangle {
         id: scrollBar
         width: 6; radius: 3
-        anchors { right: parent.right; top: flick.top; bottom: flick.bottom }
+        anchors { right: parent.right; top: gridView.top; bottom: gridView.bottom }
         color: Qt.lighter(Colors.background, 1.3)
-        visible: flick.contentHeight > flick.height
+        visible: gridView.contentHeight > gridView.height
 
         MouseArea {
             anchors.fill: parent
             onPressed: function(mouse) {
                 var ratio = Math.max(0, Math.min(1, mouse.y / scrollBar.height))
-                flick.contentY = ratio * (flick.contentHeight - flick.height)
+                gridView.contentY = ratio * (gridView.contentHeight - gridView.height)
             }
             onPositionChanged: function(mouse) {
                 if (pressed) {
                     var ratio = Math.max(0, Math.min(1, mouse.y / scrollBar.height))
-                    flick.contentY = ratio * (flick.contentHeight - flick.height)
+                    gridView.contentY = ratio * (gridView.contentHeight - gridView.height)
                 }
             }
         }
 
         Rectangle {
             width: 6; radius: 3; color: Colors.color4
-            height: Math.max(16, scrollBar.height * flick.height / Math.max(1, flick.contentHeight))
-            y: flick.contentHeight > flick.height
-             ? (scrollBar.height - height) * flick.contentY / (flick.contentHeight - flick.height)
+            height: Math.max(16, scrollBar.height * gridView.height / Math.max(1, gridView.contentHeight))
+            y: gridView.contentHeight > gridView.height
+             ? (scrollBar.height - height) * gridView.contentY / (gridView.contentHeight - gridView.height)
              : 0
         }
     }

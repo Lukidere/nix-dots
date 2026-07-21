@@ -4,7 +4,6 @@ QuickControls 1.0 QuickControls.qml
 Performance 1.0 Performance.qml
 CalendarWidget 1.0 CalendarWidget.qml
 TriggerStrip 1.0 TriggerStrip.qml
-WallpaperSwitcher 1.0 WallpaperSwitcher.qml
 WallpaperSection 1.0 WallpaperSection.qml
 MediaSection 1.0 MediaSection.qml
 WeatherWidget 1.0 WeatherWidget.qml

@@ -72,6 +72,56 @@ PanelWindow {
         }
     }
 
+    function parseArithmetic(expr) {
+        let pos = 0
+        const input = expr.trim()
+        function peek() { while (pos < input.length && /\s/.test(input[pos])) pos++; return input[pos] }
+        function parseNumber() {
+            while (pos < input.length && /\s/.test(input[pos])) pos++
+            let start = pos
+            while (pos < input.length && /[0-9.]/.test(input[pos])) pos++
+            const num = parseFloat(input.substring(start, pos))
+            return isNaN(num) ? null : num
+        }
+        function parseFactor() {
+            while (pos < input.length && /\s/.test(input[pos])) pos++
+            if (input[pos] === '(') { pos++; const r = parseExpr(); while (pos < input.length && /\s/.test(input[pos])) pos++; if (input[pos] !== ')') throw new Error("Missing )"); pos++; return r }
+            if (input[pos] === '-') { pos++; return -parseFactor() }
+            return parseNumber()
+        }
+        function parsePower() {
+            let result = parseFactor()
+            while (pos < input.length && /\s/.test(input[pos])) pos++
+            if (input[pos] === '^') { pos++; result = Math.pow(result, parseFactor()) }
+            return result
+        }
+        function parseTerm() {
+            let result = parsePower()
+            while (pos < input.length) {
+                while (pos < input.length && /\s/.test(input[pos])) pos++
+                if (input[pos] === '*') { pos++; result *= parsePower() }
+                else if (input[pos] === '/') { pos++; result /= parsePower() }
+                else if (input[pos] === '%') { pos++; result %= parsePower() }
+                else break
+            }
+            return result
+        }
+        function parseExpr() {
+            let result = parseTerm()
+            while (pos < input.length) {
+                while (pos < input.length && /\s/.test(input[pos])) pos++
+                if (input[pos] === '+') { pos++; result += parseTerm() }
+                else if (input[pos] === '-') { pos++; result -= parseTerm() }
+                else break
+            }
+            return result
+        }
+        const result = parseExpr()
+        while (pos < input.length && /\s/.test(input[pos])) pos++
+        if (pos !== input.length) throw new Error("Unexpected")
+        return result
+    }
+
     function filterApps(query) {
         combinedModel.clear()
         const q = query.toLowerCase().trim()
@@ -110,7 +160,7 @@ PanelWindow {
         const mathMatch = q.match(/^[\d\s\+\-\*\/\.\(\)%^]+$/)
         if (mathMatch && q.match(/[\+\-\*\/]/)) {
             try {
-                const result = Function('"use strict"; return (' + q + ')')()
+                const result = parseArithmetic(q)
                 if (typeof result === 'number' && isFinite(result)) {
                     combinedModel.insert(0, {
                         label: "= " + (Number.isInteger(result) ? result : result.toFixed(6).replace(/\.?0+$/, "")),

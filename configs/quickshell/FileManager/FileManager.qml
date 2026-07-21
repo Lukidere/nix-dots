@@ -21,6 +21,7 @@ PanelWindow {
     property var    items:         []
     property string searchText:    ""
     property string pathError:     ""
+    property string opError:       ""
     property bool   showHidden:    false
     property string selectedFile:  ""
     property string renamingFile:  ""
@@ -28,6 +29,10 @@ PanelWindow {
     property bool   clipboardCut:  false
     property var    history:       []
     property int    historyIndex:  -1
+    property string sortBy:        "name"
+    property bool   sortAsc:       true
+    property int    _lsSerial:     0
+    property bool   _pendingNewFolderRename: false
     property var    bookmarks: [
         { name: "Home", path: homeDir, icon: "\uf015" },
     ]
@@ -57,14 +62,15 @@ PanelWindow {
     }
 
     // --- FIFO trigger ---
+    readonly property string _fifoPath: Quickshell.env("XDG_RUNTIME_DIR") + "/qs-fm"
     readonly property Process _setup: Process {
-        command: ["sh", "-c", "rm -f /run/user/1000/qs-fm; mkfifo /run/user/1000/qs-fm"]
+        command: ["sh", "-c", "rm -f " + JSON.stringify(root._fifoPath) + "; mkfifo " + JSON.stringify(root._fifoPath)]
         running: true
         stdout: StdioCollector { onStreamFinished: root._reader.running = true }
     }
     readonly property Process _reader: Process {
         running: false
-        command: ["sh", "-c", "read -r _ < /run/user/1000/qs-fm"]
+        command: ["sh", "-c", "read -r _ < " + JSON.stringify(root._fifoPath)]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.visible = !root.visible
@@ -79,61 +85,107 @@ PanelWindow {
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
+                const serial = root._lastSerial
                 const raw = this.text.trim()
                 if (raw === "__NOTFOUND__") {
-                    root.items = []
-                    root.pathError = "Directory not found: " + root.currentPath
+                    if (serial === root._lsSerial) {
+                        root.items = []
+                        root.pathError = "Directory not found: " + root.currentPath
+                    }
                     return
                 }
+                if (serial !== root._lsSerial) return
                 root.pathError = ""
                 const lines = raw.split("\n")
                 const list = []
                 lines.forEach(function(line) {
                     if (!line) return
-                    const p = line.split("\t")
-                    if (p.length < 5) return
-                    if (!root.showHidden && p[1].startsWith(".")) return
+                    const parts = line.split("\t")
+                    if (parts.length < 5) return
+                    const name = parts.slice(0, parts.length - 4).join("\t")
+                    if (!root.showHidden && name.startsWith(".")) return
                     list.push({
-                        type:  p[0],
-                        name:  p[1],
-                        size:  parseInt(p[2]) || 0,
-                        date:  p[3] || "",
-                        perms: p[4] || "",
-                        isDir: p[0] === "d",
-                        isLink: p[0] === "l"
+                        type:  parts[parts.length - 4],
+                        name:  name,
+                        size:  parseInt(parts[parts.length - 3]) || 0,
+                        date:  parts[parts.length - 2] || "",
+                        perms: parts[parts.length - 1] || "",
+                        isDir: parts[parts.length - 4] === "d",
+                        isLink: parts[parts.length - 4] === "l"
                     })
                 })
                 list.sort(function(a, b) {
                     if (a.isDir !== b.isDir) return a.isDir ? -1 : 1
-                    return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+                    if (root.sortBy === "size") return root.sortAsc ? (a.size - b.size) : (b.size - a.size)
+                    if (root.sortBy === "date") return root.sortAsc
+                        ? a.date.localeCompare(b.date)
+                        : b.date.localeCompare(a.date)
+                    return root.sortAsc
+                        ? a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+                        : b.name.toLowerCase().localeCompare(a.name.toLowerCase())
                 })
                 root.items = list
+                if (root._pendingNewFolderRename) {
+                    root._pendingNewFolderRename = false
+                    for (let i = 0; i < list.length; i++) {
+                        if (list[i].name === "New Folder") {
+                            root.selectedFile = "New Folder"
+                            root.renamingFile = "New Folder"
+                            break
+                        }
+                    }
+                }
             }
         }
     }
+    property int _lastSerial: 0
 
     // --- File operations ---
     Process {
         id: _opProc
         running: false
-        onRunningChanged: if (!running) root.refresh()
+        onRunningChanged: {
+            if (!running) {
+                if (exitCode !== 0) {
+                    root.opError = "Operation failed (exit " + exitCode + ")"
+                    root._pendingNewFolderRename = false
+                } else
+                    root.refresh()
+                if (root.opError !== "") {
+                    errorClearTimer.restart()
+                }
+            }
+        }
+    }
+    Process {
+        id: _openProc
+        running: false
+    }
+    Process {
+        id: _termProc
+        running: false
+    }
+    Timer {
+        id: errorClearTimer
+        interval: 5000
+        onTriggered: root.opError = ""
     }
 
     // --- Helper functions ---
     function _normPath(p) {
         const s = String(p)
-        if (s.startsWith("file:///")) return s.substring(7)
-        if (s.startsWith("file://"))  return s.substring(5)
+        if (s.startsWith("file://")) return s.slice(7)
         return s
     }
 
     function _refocus() { keyHandler.forceActiveFocus() }
 
     function refresh() {
-        const p = JSON.stringify(root.currentPath)
+        root._lsSerial++
+        root._lastSerial = root._lsSerial
         _lsProc.command = ["sh", "-c",
-            "[ -d " + p + " ] && find " + p +
-            " -maxdepth 1 -mindepth 1 -printf '%y\\t%f\\t%s\\t%TY-%Tm-%Td\\t%M\\n' 2>/dev/null || echo __NOTFOUND__"
+            "[ -d \"$1\" ] && find \"$1\" -maxdepth 1 -mindepth 1 -printf '%y\\t%f\\t%s\\t%TY-%Tm-%Td\\t%M\\n' 2>/dev/null || echo __NOTFOUND__",
+            "_", root.currentPath
         ]
         _lsProc.running = false
         _lsProc.running = true
@@ -151,10 +203,10 @@ PanelWindow {
     }
 
     function goBack() {
-        if (historyIndex > 0) { historyIndex--; currentPath = history[historyIndex]; selectedFile = "" }
+        if (historyIndex > 0) { historyIndex--; currentPath = history[historyIndex]; selectedFile = ""; renamingFile = "" }
     }
     function goForward() {
-        if (historyIndex < history.length - 1) { historyIndex++; currentPath = history[historyIndex]; selectedFile = "" }
+        if (historyIndex < history.length - 1) { historyIndex++; currentPath = history[historyIndex]; selectedFile = ""; renamingFile = "" }
     }
     function goUp() {
         const parts = currentPath.split("/").filter(p => p !== "")
@@ -165,18 +217,17 @@ PanelWindow {
     }
 
     function openFile(path) {
-        _opProc.command = ["xdg-open", path]
-        _opProc.running = false; _opProc.running = true
+        _openProc.command = ["xdg-open", path]
+        _openProc.running = false; _openProc.running = true
     }
     function deleteSelected() {
         if (!root.selectedFile) return
-        _opProc.command = ["rm", "-rf", root.currentPath + "/" + root.selectedFile]
-        root.selectedFile = ""
-        _opProc.running = false; _opProc.running = true
+        deleteConfirmDialog.targetPath = root.currentPath + "/" + root.selectedFile
+        deleteConfirmDialog.visible = true
     }
     function renameFile(oldName, newName) {
         if (!newName || newName === oldName) { root.renamingFile = ""; return }
-        _opProc.command = ["mv",
+        _opProc.command = ["mv", "--",
             root.currentPath + "/" + oldName,
             root.currentPath + "/" + newName
         ]
@@ -187,15 +238,17 @@ PanelWindow {
         if (!root.clipboardFile) return
         const src  = root.clipboardFile
         const dest = root.currentPath + "/"
+        if (root.clipboardCut) {
+            _opProc.command = ["mv", "--", src, dest]
+        } else {
+            _opProc.command = ["cp", "-r", "--", src, dest]
+        }
         root.clipboardFile = ""
-        if (root.clipboardCut)
-            _opProc.command = ["mv", src, dest]
-        else
-            _opProc.command = ["sh", "-c", "cp -r " + JSON.stringify(src) + " " + JSON.stringify(dest)]
         _opProc.running = false; _opProc.running = true
     }
     function newFolder() {
-        _opProc.command = ["sh", "-c", "mkdir -p " + JSON.stringify(root.currentPath + "/New Folder")]
+        root._pendingNewFolderRename = true
+        _opProc.command = ["mkdir", "-p", "--", root.currentPath + "/New Folder"]
         _opProc.running = false; _opProc.running = true
     }
 
@@ -251,6 +304,7 @@ PanelWindow {
         focus: true
 
         Keys.onEscapePressed: {
+            if (deleteConfirmDialog.visible) { deleteConfirmDialog.visible = false; keyHandler.forceActiveFocus(); return }
             if (root.renamingFile !== "") { root.renamingFile = ""; return }
             if (ctxMenu.visible) { ctxMenu.visible = false; return }
             root.visible = false
@@ -282,6 +336,49 @@ PanelWindow {
             }
             if (ctrl && ev.key === Qt.Key_N) {
                 root.newFolder(); ev.accepted = true; return
+            }
+            if (ctrl && ev.key === Qt.Key_T) {
+                const term = Quickshell.env("TERMINAL") || "kitty"
+                _termProc.command = [term]
+                _termProc.workingDirectory = root.currentPath
+                _termProc.running = false; _termProc.running = true
+                ev.accepted = true; return
+            }
+            if (ev.key === Qt.Key_Up && !pathInput.activeFocus && !searchInput.activeFocus && root.renamingFile === "") {
+                if (root.filteredItems.length === 0) return
+                const idx = root.filteredItems.findIndex(f => f.name === root.selectedFile)
+                if (idx > 0) {
+                    root.selectedFile = root.filteredItems[idx - 1].name
+                    ev.accepted = true
+                } else if (idx === -1 && root.filteredItems.length > 0) {
+                    root.selectedFile = root.filteredItems[root.filteredItems.length - 1].name
+                    ev.accepted = true
+                }
+                return
+            }
+            if (ev.key === Qt.Key_Down && !pathInput.activeFocus && !searchInput.activeFocus && root.renamingFile === "") {
+                if (root.filteredItems.length === 0) return
+                const idx = root.filteredItems.findIndex(f => f.name === root.selectedFile)
+                if (idx >= 0 && idx < root.filteredItems.length - 1) {
+                    root.selectedFile = root.filteredItems[idx + 1].name
+                    ev.accepted = true
+                } else if (idx === -1 && root.filteredItems.length > 0) {
+                    root.selectedFile = root.filteredItems[0].name
+                    ev.accepted = true
+                }
+                return
+            }
+            if (ev.key === Qt.Key_Return && root.selectedFile && !pathInput.activeFocus && !searchInput.activeFocus && root.renamingFile === "") {
+                if (deleteConfirmDialog.visible) return
+                const item = root.items.find(f => f.name === root.selectedFile)
+                if (item) {
+                    if (item.isDir)
+                        root.navigate(root.currentPath + "/" + item.name)
+                    else
+                        root.openFile(root.currentPath + "/" + item.name)
+                    ev.accepted = true
+                }
+                return
             }
             if (ev.key === Qt.Key_Backspace && !pathInput.activeFocus && !searchInput.activeFocus) {
                 root.goBack(); ev.accepted = true; return
@@ -496,9 +593,39 @@ PanelWindow {
                     height: 24; color: Qt.darker(Colors.background, 1.08)
                     Row {
                         anchors { fill: parent; leftMargin: 42 }
-                        Text { width: fileArea.width - 200; text: "Name"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8; verticalAlignment: Text.AlignVCenter; height: parent.height }
-                        Text { width: 70; text: "Size"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter; height: parent.height }
-                        Text { width: 80; text: "Date"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter; height: parent.height; rightPadding: 10 }
+                        Rectangle {
+                            width: fileArea.width - 200; height: parent.height
+                            color: sortNameMa.containsMouse ? Qt.lighter(Colors.background, 1.2) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 60 } }
+                            Row {
+                                anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
+                                Text { text: "Name"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: root.sortBy === "name" ? Colors.color4 : Colors.color8; verticalAlignment: Text.AlignVCenter }
+                                Text { text: root.sortBy === "name" ? (root.sortAsc ? "" : "") : ""; font.family: "Iosevka Nerd Font"; font.pixelSize: 8; color: Colors.color4; verticalAlignment: Text.AlignVCenter }
+                            }
+                            MouseArea { id: sortNameMa; anchors.fill: parent; hoverEnabled: true; onClicked: { if (root.sortBy === "name") root.sortAsc = !root.sortAsc; else { root.sortBy = "name"; root.sortAsc = true } } }
+                        }
+                        Rectangle {
+                            width: 70; height: parent.height
+                            color: sortSizeMa.containsMouse ? Qt.lighter(Colors.background, 1.2) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 60 } }
+                            Row {
+                                anchors { fill: parent; rightMargin: 8 }
+                                Text { text: "Size"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: root.sortBy === "size" ? Colors.color4 : Colors.color8; horizontalAlignment: Text.AlignRight; width: parent.width - 12; verticalAlignment: Text.AlignVCenter }
+                                Text { text: root.sortBy === "size" ? (root.sortAsc ? "" : "") : ""; font.family: "Iosevka Nerd Font"; font.pixelSize: 8; color: Colors.color4; width: 12; horizontalAlignment: Text.AlignCenter; verticalAlignment: Text.AlignVCenter }
+                            }
+                            MouseArea { id: sortSizeMa; anchors.fill: parent; hoverEnabled: true; onClicked: { if (root.sortBy === "size") root.sortAsc = !root.sortAsc; else { root.sortBy = "size"; root.sortAsc = true } } }
+                        }
+                        Rectangle {
+                            width: 80; height: parent.height
+                            color: sortDateMa.containsMouse ? Qt.lighter(Colors.background, 1.2) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 60 } }
+                            Row {
+                                anchors { fill: parent; rightMargin: 10 }
+                                Text { text: "Date"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: root.sortBy === "date" ? Colors.color4 : Colors.color8; horizontalAlignment: Text.AlignRight; width: parent.width - 12; verticalAlignment: Text.AlignVCenter }
+                                Text { text: root.sortBy === "date" ? (root.sortAsc ? "" : "") : ""; font.family: "Iosevka Nerd Font"; font.pixelSize: 8; color: Colors.color4; width: 12; horizontalAlignment: Text.AlignCenter; verticalAlignment: Text.AlignVCenter }
+                            }
+                            MouseArea { id: sortDateMa; anchors.fill: parent; hoverEnabled: true; onClicked: { if (root.sortBy === "date") root.sortAsc = !root.sortAsc; else { root.sortBy = "date"; root.sortAsc = true } } }
+                        }
                     }
                 }
 
@@ -557,6 +684,8 @@ PanelWindow {
                                     ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.15)
                                     : (itemMa.containsMouse ? Qt.lighter(Colors.background, 1.35) : "transparent")
                                 Behavior on color { ColorAnimation { duration: 60 } }
+                                opacity: (root.clipboardCut && root.clipboardFile === root.currentPath + "/" + modelData.name) ? 0.5 : 1.0
+                                Behavior on opacity { NumberAnimation { duration: 60 } }
 
                                 Row {
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -653,6 +782,8 @@ PanelWindow {
                                 { text: "",            sep: true,  action: "",        danger: false },
                                 { text: "Rename  F2",  sep: false, action: "rename", danger: false },
                                 { text: "Delete  Del", sep: false, action: "delete", danger: true  },
+                                { text: "",            sep: true,  action: "",        danger: false },
+                                { text: "Terminal Ctrl+T", sep: false, action: "terminal", danger: false },
                             ]
                             delegate: Item {
                                 required property var modelData
@@ -708,6 +839,12 @@ PanelWindow {
                                             else if (modelData.action === "paste")  { root.pasteClipboard() }
                                             else if (modelData.action === "rename") { root.renamingFile = t }
                                             else if (modelData.action === "delete") { root.selectedFile = t; root.deleteSelected() }
+                                            else if (modelData.action === "terminal") {
+                                                const term = Quickshell.env("TERMINAL") || "kitty"
+                                                _termProc.command = [term]
+                                                _termProc.workingDirectory = d ? p : root.currentPath
+                                                _termProc.running = false; _termProc.running = true
+                                            }
                                             root._refocus()
                                         }
                                     }
@@ -733,21 +870,88 @@ PanelWindow {
                 spacing: 16
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: root.opError === ""
                     text: root.filteredItems.length + " item" + (root.filteredItems.length !== 1 ? "s" : "")
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: root.opError !== ""
+                    text: "  " + root.opError
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color1
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.opError === ""
                     text: root.selectedFile; elide: Text.ElideMiddle; width: 280
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.foreground
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.clipboardFile !== ""
+                    visible: root.opError === "" && root.clipboardFile !== ""
                     text: (root.clipboardCut ? " cut: " : " copy: ") + root.clipboardFile.split("/").pop()
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 10
                     color: root.clipboardCut ? Colors.color3 : Colors.color2
                 }
+            }
+        }
+
+        // --- Delete confirmation dialog ---
+        Rectangle {
+            id: deleteConfirmDialog
+            visible: false; z: 200
+            anchors.centerIn: parent
+            width: 300; height: delCol.implicitHeight + 40
+            radius: 10; color: Colors.background
+            border.color: Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.3); border.width: 1
+            property string targetPath: ""
+            onVisibleChanged: if (visible) forceActiveFocus()
+
+            Column {
+                id: delCol
+                anchors { fill: parent; margins: 20 }
+                spacing: 12
+                Text {
+                    width: parent.width
+                    text: "Move '" + deleteConfirmDialog.targetPath.split("/").pop() + "' to trash?"
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 12; color: Colors.foreground
+                    wrapMode: Text.Wrap
+                }
+                Row {
+                    width: parent.width; spacing: 8
+                    Rectangle {
+                        width: (parent.width - 8) / 2; height: 28; radius: 4
+                        color: cancelMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : Qt.darker(Colors.background, 1.1)
+                        Behavior on color { ColorAnimation { duration: 60 } }
+                        Text { anchors.centerIn: parent; text: "Cancel"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.foreground }
+                        MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; onClicked: { deleteConfirmDialog.visible = false; root._refocus() } }
+                    }
+                    Rectangle {
+                        width: (parent.width - 8) / 2; height: 28; radius: 4
+                        color: confirmMa.containsMouse ? Qt.rgba(Colors.color1.r, Colors.color1.g, Colors.color1.b, 0.2) : Qt.darker(Colors.background, 1.1)
+                        Behavior on color { ColorAnimation { duration: 60 } }
+                        Text { anchors.centerIn: parent; text: "Delete"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color1 }
+                        MouseArea {
+                            id: confirmMa; anchors.fill: parent; hoverEnabled: true
+                            onClicked: {
+                                if (_opProc.running) return
+                                deleteConfirmDialog.visible = false
+                                _opProc.command = ["gio", "trash", "--", deleteConfirmDialog.targetPath]
+                                _opProc.running = false; _opProc.running = true
+                                root._refocus()
+                            }
+                        }
+                    }
+                }
+            }
+
+            Keys.onEscapePressed: { visible = false; root._refocus() }
+            Keys.onReturnPressed: {
+                if (_opProc.running) return
+                _opProc.command = ["gio", "trash", "--", deleteConfirmDialog.targetPath]
+                _opProc.running = false; _opProc.running = true
+                visible = false
+                root._refocus()
             }
         }
     }

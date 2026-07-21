@@ -22,11 +22,13 @@ Item {
             if (root.secondsLeft > 0) {
                 root.secondsLeft--
             } else {
-                root.running = false
-                root.session = root.session === 0 ? 1 : 0
-                root.secondsLeft = root.session === 0
+                const nextSession = root.session === 0 ? 1 : 0
+                const nextDuration = nextSession === 0
                     ? root.workMinutes  * 60
                     : root.breakMinutes * 60
+                root.secondsLeft = nextDuration
+                root.session = nextSession
+                root.running = false
             }
         }
     }
@@ -172,11 +174,13 @@ Item {
                 MouseArea {
                     id: skipMa; anchors.fill: parent; hoverEnabled: true
                     onClicked: {
-                        root.running = false
-                        root.session = root.session === 0 ? 1 : 0
-                        root.secondsLeft = root.session === 0
+                        const nextSession = root.session === 0 ? 1 : 0
+                        const nextDuration = nextSession === 0
                             ? root.workMinutes  * 60
                             : root.breakMinutes * 60
+                        root.secondsLeft = nextDuration
+                        root.session = nextSession
+                        root.running = false
                     }
                 }
             }
