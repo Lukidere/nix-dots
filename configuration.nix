@@ -89,6 +89,7 @@ in
   services.usbmuxd.enable = true;
   services.libinput.enable = true; # Touchpad support
   services.power-profiles-daemon.enable = true;
+  programs.steam.enable = true;
   # Lid: on battery/AC → suspend (swayidle locks before sleep);
   # docked (external monitor attached) → lock only, session stays on the monitor
   services.logind.settings.Login = {
@@ -227,6 +228,8 @@ in
     brightnessctl
     networkmanagerapplet
     qt6.qtwayland
+    xwayland
+    xwayland-satellite
     wallust
     claude-code
     libnotify
@@ -250,6 +253,7 @@ in
     cargo
     cargo-leptos
     gcc
+    gh
     opencode
     nixd
     pyright

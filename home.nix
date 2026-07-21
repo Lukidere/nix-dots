@@ -46,7 +46,6 @@ in
     tuigreet
     # --- Applications ---
     brave
-    steam
     libreoffice
     librewolf
     vesktop

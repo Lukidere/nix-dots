@@ -1,1 +1,9 @@
 .claude
+.agents/
+.claude-flow/
+.serena/
+.swarm/
+.mcp.json
+CLAUDE.md
+ruvector.db
+skills-lock.json
