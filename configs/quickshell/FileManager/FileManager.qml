@@ -102,16 +102,17 @@ PanelWindow {
                     if (!line) return
                     const parts = line.split("\t")
                     if (parts.length < 5) return
-                    const name = parts.slice(0, parts.length - 4).join("\t")
+                    // fields: type, name(may contain tabs), size, date, perms
+                    const name = parts.slice(1, parts.length - 3).join("\t")
                     if (!root.showHidden && name.startsWith(".")) return
                     list.push({
-                        type:  parts[parts.length - 4],
+                        type:  parts[0],
                         name:  name,
                         size:  parseInt(parts[parts.length - 3]) || 0,
                         date:  parts[parts.length - 2] || "",
                         perms: parts[parts.length - 1] || "",
-                        isDir: parts[parts.length - 4] === "d",
-                        isLink: parts[parts.length - 4] === "l"
+                        isDir: parts[0] === "d",
+                        isLink: parts[0] === "l"
                     })
                 })
                 list.sort(function(a, b) {
