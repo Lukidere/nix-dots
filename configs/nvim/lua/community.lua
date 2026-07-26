@@ -10,6 +10,7 @@ return {
   { import = "astrocommunity.pack.python" },
   { import = "astrocommunity.pack.bash" },
   { import = "astrocommunity.pack.nix" },
+  { import = "astrocommunity.pack.haskell" },
   { import = "astrocommunity.pack.typescript" },
   { import = "astrocommunity.editing-support.conform-nvim" },
   -- import/override with your plugins folder

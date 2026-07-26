@@ -51,7 +51,10 @@ in
       "btrtl"
       "amdgpu"
     ];
-    kernelParams = [ "nvidia-drm.modeset=1" ];
+    kernelParams = [ "nvidia-drm.modeset=1" "quiet" "splash" "loglevel=3" "udev.log_level=3" ];
+    consoleLogLevel = 0;
+    initrd.verbose = false;
+    plymouth.enable = true;
     loader = {
       systemd-boot.enable = false;
       grub = {
@@ -127,14 +130,70 @@ in
   # ==========================================
   programs.niri.enable = true;
 
-  services.greetd = {
+  # GTK greeter (regreet) - themed login matching the Rosé Pine dots
+  programs.regreet = {
     enable = true;
+    font = {
+      name = "Iosevka Nerd Font";
+      size = 12;
+      package = pkgs.nerd-fonts.iosevka;
+    };
     settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd \"${pkgs.niri}/bin/niri-session\"";
-        user = "greeter";
+      GTK = {
+        application_prefer_dark_theme = true;
+        cursor_theme_name = "Adwaita";
+      };
+      commands = {
+        reboot = [ "systemctl" "reboot" ];
+        poweroff = [ "systemctl" "poweroff" ];
       };
     };
+    # Mirrors the gtklock lock-screen look (wallust rose-pine template)
+    extraCss = ''
+      window {
+        background-color: rgb(38, 35, 58);
+        color: #e0def4;
+      }
+      label {
+        color: #e0def4;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+      entry {
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-size: 16px;
+        background-color: alpha(#191724, 0.6);
+        color: #e0def4;
+        border: 2px solid alpha(#31748f, 0.4);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        caret-color: #31748f;
+        transition: all 200ms ease;
+      }
+      entry:focus-within {
+        border-color: #31748f;
+        box-shadow: 0 0 0 3px alpha(#31748f, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+        background-color: alpha(#191724, 0.8);
+      }
+      button {
+        border-radius: 12px;
+        padding: 10px 32px;
+        background-image: none;
+        background-color: alpha(#31748f, 0.2);
+        color: #31748f;
+        border: 1px solid alpha(#31748f, 0.3);
+        transition: all 200ms ease;
+      }
+      button:hover {
+        background-color: alpha(#31748f, 0.35);
+        border-color: #31748f;
+      }
+      button:active {
+        background-color: alpha(#31748f, 0.5);
+      }
+      combobox button, dropdown button {
+        padding: 6px 12px;
+      }
+    '';
   };
 
   xdg.portal = {
@@ -210,6 +269,16 @@ in
     };
   };
   virtualisation.docker.enable = true;
+
+  # PO-token provider for yt-dlp (premium-quality YT Music streams in the dashboard)
+  virtualisation.oci-containers = {
+    backend = "docker";
+    containers.bgutil-pot = {
+      image = "brainicism/bgutil-ytdlp-pot-provider:1.3.1";
+      ports = [ "127.0.0.1:4416:4416" ];
+      extraOptions = [ "--init" ];
+    };
+  };
   # ==========================================
   # 10. System Packages
   # ==========================================
@@ -228,6 +297,7 @@ in
     brightnessctl
     networkmanagerapplet
     qt6.qtwayland
+    qt6.qtdeclarative # qmlls for neovim + qml tooling
     xwayland
     xwayland-satellite
     wallust
@@ -237,7 +307,8 @@ in
     colloid-icon-theme
     htop
     imv
-    mpv
+    (mpv.override { scripts = [ mpvScripts.mpris ]; }) # MPRIS control for headless playback
+    yt-dlp
     gtklock
     swayidle
     unstable.awww
@@ -254,6 +325,10 @@ in
     cargo-leptos
     gcc
     gh
+    ghc
+    haskell-language-server
+    uv
+    sqlite
     opencode
     nixd
     pyright
@@ -271,7 +346,7 @@ in
     nodejs_24
     openssl
     pkg-config
-    python3
+    (python3.withPackages (ps: [ ps.ytmusicapi ])) # qs-ytmusic.py (dashboard YT Music)
     bun
     rust-analyzer
     rustfmt

@@ -29,13 +29,15 @@ return {
       "bashls",
       "ts_ls",
       "lua_ls",
+      "qmlls",
     },
     config = {
       rust_analyzer = {
         cmd = { "rust-analyzer" },
         settings = {
           ["rust-analyzer"] = {
-            checkOnSave = { command = "clippy" },
+            checkOnSave = true,
+            check = { command = "clippy" },
             inlayHints = {
               bindingModeHints = { enable = true },
               chainingHints = { enable = true },
@@ -58,6 +60,7 @@ return {
       bashls = { cmd = { "bash-language-server", "start" } },
       pyright = { cmd = { "pyright-langserver", "--stdio" } },
       ts_ls = { cmd = { "typescript-language-server", "--stdio" } },
+      qmlls = { cmd = { "qmlls", "-E" } },
     },
     handlers = {
       rnix = false, -- disabled: using nixd instead (astrocommunity.pack.nix enables rnix by default)
@@ -95,6 +98,5 @@ return {
         },
       },
     },
-    on_attach = function(client, bufnr) end,
   },
 }

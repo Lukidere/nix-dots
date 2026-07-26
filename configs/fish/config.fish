@@ -196,3 +196,14 @@ set -gx GOPATH $HOME/go
 set -gx PATH $GOPATH/bin $PATH
 set -gx CARGO_HOME $HOME/.cargo
 set -gx PATH $CARGO_HOME/bin $PATH
+
+###################
+### Cargo #########
+###################
+# Size-optimized builds (global strip/LTO live in ~/.cargo/config.toml via home.nix)
+alias cb='cargo build --release'
+alias cr='cargo run --release'
+# Tiny: max size shrink (opt-level=z, abort on panic - don't use for `cargo test`)
+alias cbt "cargo build --release --config 'profile.release.opt-level=\"z\"' --config 'profile.release.panic=\"abort\"'"
+alias ccl='cargo clean'
+alias csize='cargo build --release; and du -sh target/release'
