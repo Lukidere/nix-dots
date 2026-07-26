@@ -75,7 +75,7 @@ QtObject {
 
     // ── wifi scan ──
     readonly property Process _scanProc: Process {
-        // ponytail: popup closed → --rescan no reads NM cache only, no radio wakeups
+        // popup closed → --rescan no reads NM cache only, no radio wakeups
         command: ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,ACTIVE", "device", "wifi", "list"]
                  .concat(root.wifiMenuOpen ? [] : ["--rescan", "no"])
         running: false
@@ -210,7 +210,7 @@ QtObject {
         root.lastWifiError  = ""
         root.lastAttemptSSID = ssid
         root.lastAttemptSecured = true
-        // ponytail: password via stdin passwd-file - never on argv (visible in ps);
+        // password via stdin passwd-file - never on argv (visible in ps);
         // nmcli --ask is broken on NixOS (spawns its own polkit agent, helper missing).
         // ceiling: hardcoded wpa-psk - pure-WPA3(SAE) networks need key-mgmt sae; add if one shows up
         _connectProc.pendingPass = "wifi-sec.psk:" + pass + "\n"

@@ -75,7 +75,7 @@ def resolve_icon(name):
     return ''
 
 
-# ponytail: classify by dir - native always wins over flatpak when names collide
+# classify by dir - native always wins over flatpak when names collide
 FLATPAK_DIRS = {
     '/var/lib/flatpak/exports/share/applications',
     os.path.expanduser('~/.local/share/flatpak/exports/share/applications'),

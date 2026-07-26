@@ -12,9 +12,9 @@ PanelWindow {
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: panel.activeTab === 5 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (panel.activeTab === 1 || panel.activeTab === 5) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
-    // ponytail: mask limits input to hover/panel rects - rest of screen click-through
+    // mask limits input to hover/panel rects - rest of screen click-through
     mask: Region {
         item: hoverWrapper
         Region { item: volPanelArea }
@@ -50,7 +50,7 @@ PanelWindow {
         }
     }
 
-    // ponytail: vertical twin of HSlider - bottom = 0%, top = 100%
+    // vertical twin of HSlider - bottom = 0%, top = 100%
     component VSlider: Item {
         id: vs
         width: 20
@@ -87,10 +87,10 @@ PanelWindow {
 
     Item {
         id: volPanelArea
-        // ponytail: hover zone must cover strip's full hit area (640px tall, 12px wide on right)
+        // hover zone must cover strip's full hit area (640px tall, 12px wide on right)
         // so cursor-on-strip also hovers this → show() cancels strip's pending hide, no flicker
         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-        // ponytail: catch zone hugs panel - strip hitH now matches volPanelRect.height (380)
+        // catch zone hugs panel - strip hitH now matches volPanelRect.height (380)
         width: volPanelRect.width + 16
         height: volPanelRect.height + 16
 
@@ -103,7 +103,7 @@ PanelWindow {
             }
         }
 
-        // ponytail: faux shadow - three offset rects behind panel, no Qt5Compat dep
+        // faux shadow - three offset rects behind panel, no Qt5Compat dep
         Repeater {
             model: [
                 { off: 10, op: 0.10, rad: 22 },
@@ -125,7 +125,7 @@ PanelWindow {
 
         Rectangle {
             id: volPanelRect
-            // ponytail: narrow vertical pill, slides in from right edge with drop-shadow
+            // narrow vertical pill, slides in from right edge with drop-shadow
             readonly property bool _open: DashboardState.volPanelScreen === root.modelData.name
             anchors { verticalCenter: parent.verticalCenter }
             x: _open ? (parent.width - width - Space.xs) : parent.width - 4
@@ -247,13 +247,13 @@ PanelWindow {
     // Hover wrapper - wide catch zone above panel
     Item {
         id: hoverWrapper
-        // ponytail: catchW == panelW - strip hitW uses same formula, perfect overlap, no overflow
+        // catchW == panelW - strip hitW uses same formula, perfect overlap, no overflow
         x: Math.round((parent.width - catchW) / 2)
         y: 0
         width: catchW
         height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 16 : 22
 
-        // ponytail: bumped 22% → 26% to accommodate 56 px sidebar rail
+        // bumped 22% → 26% to accommodate 56 px sidebar rail
         readonly property int panelW: Math.min(520, Math.max(440, Math.round(parent.width * 0.26)))
         readonly property int catchW: panelW
 
@@ -266,7 +266,7 @@ PanelWindow {
 
         Rectangle {
             id: panel
-            // ponytail: center inside wider catch zone (catchW), wrapper no longer hugs panel
+            // center inside wider catch zone (catchW), wrapper no longer hugs panel
             x: Math.round((hoverWrapper.catchW - hoverWrapper.panelW) / 2)
             y: DashboardState.activeScreenName === root.modelData.name ? 8 : -14
             width: hoverWrapper.panelW; height: 700
@@ -276,12 +276,12 @@ PanelWindow {
             border.width: 1
             opacity: DashboardState.activeScreenName === root.modelData.name ? 1 : 0
             visible: opacity > 0
-            // ponytail: snappier entrance - 120/140 vs 180/200
+            // snappier entrance - 120/140 vs 180/200
             Behavior on opacity { NumberAnimation { duration: 120 } }
             Behavior on y       { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
             property int activeTab: 0
-            // ponytail: per-tab accent - sweeps across panel on tab switch
+            // per-tab accent - sweeps across panel on tab switch
             property color accent: Tab.accent(activeTab)
             Behavior on accent { ColorAnimation { duration: Space.med } }
 
@@ -303,7 +303,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: quickControls.weatherIcon
                             font.family: Type.face; font.pixelSize: 48
-                            // ponytail: fixed sun-yellow regardless of active tab
+                            // fixed sun-yellow regardless of active tab
                             color: Colors.color3
                         }
                         Column {

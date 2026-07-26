@@ -10,7 +10,7 @@ Item {
     property string _lastClip: ""
 
     // Watch clipboard via wl-paste (works on Wayland without focus)
-    // ponytail: event-driven only - restart if watcher dies via backoff timer
+    // event-driven only - restart if watcher dies via backoff timer
     Timer {
         id: clipRestartTimer
         interval: 2000; repeat: false

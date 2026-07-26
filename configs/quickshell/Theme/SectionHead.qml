@@ -1,7 +1,7 @@
 import QtQuick
 import "."
 
-// ponytail: lush section header - replaces 3px-bar + CAPS pattern
+// lush section header - replaces 3px-bar + CAPS pattern
 Item {
     id: sh
     property string label

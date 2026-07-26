@@ -203,7 +203,7 @@ PanelWindow {
                 .replace(/\s+--\s*$/g, "")
                 .replace(/\s+/g, " ")
                 .trim()
-            // ponytail: setsid -f detaches into new session so SIGTERM on launchProc
+            // setsid -f detaches into new session so SIGTERM on launchProc
             //           doesn't propagate to flatpak run / long-lived wrappers (e.g. sober)
             launchProc.command = ["setsid", "-f", "sh", "-c", exec]
             launchProc.running = false; launchProc.running = true
@@ -329,7 +329,7 @@ PanelWindow {
                                     font.pixelSize: 13; font.family: "Iosevka Nerd Font"
                                     color: resultsList.currentIndex === index ? Colors.background : Colors.foreground
                                 }
-                                // ponytail: flatpak badge - small pill so user knows what'll run
+                                // flatpak badge - small pill so user knows what'll run
                                 Rectangle {
                                     visible: modelData.source === "flatpak"
                                     anchors.verticalCenter: parent.verticalCenter

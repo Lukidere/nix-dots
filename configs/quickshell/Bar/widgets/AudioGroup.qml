@@ -1,7 +1,7 @@
 import QtQuick
 import "../../Theme"
 
-// ponytail: misnamed - this is the WiFi bar widget. Thin view over NetworkState
+// misnamed - this is the WiFi bar widget. Thin view over NetworkState
 // (single source of truth shared with the dashboard); all polling lives there.
 Item {
     id: root

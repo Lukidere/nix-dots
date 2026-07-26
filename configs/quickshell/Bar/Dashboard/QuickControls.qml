@@ -13,7 +13,7 @@ Item {
     property int  brightness: 50
     property bool eyeHealth:  false
 
-    // ponytail: expose weather data so the dashboard hero can reuse it
+    // expose weather data so the dashboard hero can reuse it
     property alias weatherIcon: wxData.wIcon
     property alias weatherTemp: wxData.temp
     property alias weatherDesc: wxData.desc
@@ -85,7 +85,7 @@ Item {
     Process { id: _eyeOn;      command: ["sh", "-c", "gammastep &"]; running: false }
     Process { id: _eyeOff;     command: ["sh","-c", "pkill -f [g]ammastep"]; running: false }
 
-    // ponytail: auto night mode - on 18:00–06:00, off otherwise. Respects manual override (_lockEye).
+    // auto night mode - on 18:00–06:00, off otherwise. Respects manual override (_lockEye).
     function _autoNight() {
         if (root._lockEye) return
         const h = new Date().getHours()
@@ -375,7 +375,7 @@ Item {
                 id: wxData
                 width: 1; height: 1
                 visible: false
-                // ponytail: pause geo + weather fetches while dashboard is closed
+                // pause geo + weather fetches while dashboard is closed
                 active: DashboardState.activeScreenName !== ""
             }
 

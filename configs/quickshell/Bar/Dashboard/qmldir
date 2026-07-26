@@ -11,6 +11,6 @@ PowerMenu 1.0 PowerMenu.qml
 NotificationCenter 1.0 NotificationCenter.qml
 ClipboardHistory 1.0 ClipboardHistory.qml
 SystemInfo 1.0 SystemInfo.qml
-NavidromeClient 1.0 NavidromeClient.qml
+YtMusicClient 1.0 YtMusicClient.qml
 PomodoroTimer 1.0 PomodoroTimer.qml
 TodoList 1.0 TodoList.qml

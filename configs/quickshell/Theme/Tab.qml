@@ -3,7 +3,7 @@ import QtQuick
 import "."
 
 QtObject {
-    // ponytail: per-tab identity - accent + display name + nerd-font icon
+    // per-tab identity - accent + display name + nerd-font icon
     function accent(i) {
         return [
             Colors.color4,   // 0 Controls - blue

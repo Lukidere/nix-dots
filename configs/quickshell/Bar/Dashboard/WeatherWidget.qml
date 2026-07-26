@@ -6,7 +6,7 @@ Item {
     id: root
     height: col.implicitHeight
 
-    // ponytail: gates geo + weather processes - flip false when consumer is hidden
+    // gates geo + weather processes - flip false when consumer is hidden
     property bool   active:    true
 
     property string temp:      "--"

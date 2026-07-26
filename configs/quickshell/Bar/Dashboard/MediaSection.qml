@@ -1,23 +1,13 @@
 import QtQuick
 import "../../Theme"
 
+// Music tab - YT Music only. The bar's Mpris widget stays generic;
+// everything here targets the dashboard-owned mpv player.
 Item {
     id: root
 
-    property int mode: 0  // 0 = MPRIS, 1 = Navidrome
-
     // Exposed for ambient-art consumers in DashboardWindow
-    property string artUrl: MprisState.artUrl
-
-    // ── MPRIS state (sourced from shared singleton) ──────────────────
-    readonly property string mpStatus:   MprisState.status
-    readonly property string mpTitle:    MprisState.title
-    readonly property string mpArtist:   MprisState.artist
-    readonly property string mpAlbum:    MprisState.album
-    readonly property string mpArtUrl:   MprisState.artUrl
-    readonly property string mpPlayer:   MprisState.player
-    readonly property real   mpPosition: MprisState.position
-    readonly property real   mpDuration: MprisState.duration
+    property string artUrl: yt.mpvArt
 
     function fmtTime(s) {
         const m = Math.floor(s / 60)
@@ -25,327 +15,167 @@ Item {
         return m + ":" + (ss < 10 ? "0" : "") + ss
     }
 
-    // ── Navidrome state ─────────────────────────────────────────────
-    NavidromeClient { id: navi }
+    YtMusicClient { id: yt }
 
-    property string ndBrowse: "albums"  // albums, artists, playlists, random
-    property string ndView: "browse"    // browse, tracks, setup
+    property string ytBrowse: "search"  // search, playlists, liked
+    property string ytView: "browse"    // browse, tracks
 
-    // ── Layout ──────────────────────────────────────────────────────
     Column {
-        anchors.fill: parent; spacing: 10
+        anchors.fill: parent
+        spacing: 10
 
-        // Mode switcher: MPRIS / Navidrome
-        Row {
-            width: parent.width; spacing: 4
-            Repeater {
-                model: ["MPRIS", "Navidrome"]
-                delegate: Rectangle {
-                    required property int index
-                    required property string modelData
-                    width: (parent.width - 4) / 2; height: 28; radius: 6
-                    color: root.mode === index ? Colors.color4
-                         : modeMa.containsMouse ? Qt.lighter(Colors.background, 1.5)
-                         : Qt.lighter(Colors.background, 1.3)
-                    Behavior on color { ColorAnimation { duration: 100 } }
-                    Text {
-                        anchors.centerIn: parent; text: modelData
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                        color: root.mode === index ? Colors.background : Colors.foreground
-                    }
-                    MouseArea { id: modeMa; anchors.fill: parent; hoverEnabled: true
-                        onClicked: {
-                            root.mode = index
-                            if (index === 1 && !navi.configured) root.ndView = "setup"
-                            else if (index === 1) root.ndView = "browse"
-                        }
-                    }
-                }
-            }
-        }
+        // ── Now playing header (mpv) ────────────────────────────────
+        Item {
+            width: parent.width; height: 90
+            visible: yt.nowId !== ""
 
-        // ── MPRIS player ────────────────────────────────────────────
-        Column {
-            width: parent.width; spacing: 14
-            visible: root.mode === 0
-
-            Item {
-                width: parent.width; height: 90
-                // Glow ring - pulses when playing
-                Rectangle {
-                    width: 88; height: 88; radius: 12
-                    anchors.centerIn: artRect
-                    color: "transparent"
-                    border.width: 2
-                    border.color: root.mpStatus === "Playing"
-                        ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.55)
-                        : "transparent"
-                    Behavior on border.color { ColorAnimation { duration: 600 } }
-                }
-
-                Rectangle {
-                    id: artRect
-                    width: 80; height: 80
-                    anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                    radius: 8; color: Qt.lighter(Colors.background, 1.3); clip: true
-                    Image {
-                        id: artImg; anchors.fill: parent
-                        source: root.mpArtUrl !== "" && (root.mpArtUrl.startsWith("file://") || root.mpArtUrl.startsWith("http"))
-                              ? root.mpArtUrl : ""
-                        fillMode: Image.PreserveAspectCrop; smooth: true; mipmap: true; asynchronous: true
-                        visible: status === Image.Ready
-                    }
-                    Text {
-                        anchors.centerIn: parent; text: "\uF001"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 24
-                        color: Colors.color8; visible: artImg.status !== Image.Ready
-                    }
-                }
-                Column {
-                    anchors { left: artRect.right; leftMargin: 12; right: parent.right; verticalCenter: parent.verticalCenter }
-                    spacing: 4
-                    Text { width: parent.width; text: root.mpTitle; font.family: "Iosevka Nerd Font"; font.pixelSize: 13; font.bold: true; color: Colors.foreground; elide: Text.ElideRight }
-                    Text { width: parent.width; text: root.mpArtist; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8; elide: Text.ElideRight; visible: root.mpArtist !== "" }
-                    Text { width: parent.width; text: root.mpAlbum; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color6; elide: Text.ElideRight; visible: root.mpAlbum !== "" }
-                }
-            }
-
-            Column {
-                width: parent.width; spacing: 4
-                Rectangle {
-                    width: parent.width; height: 4; radius: 2; color: Qt.lighter(Colors.background, 1.4)
-                    Rectangle {
-                        width: root.mpDuration > 0 ? parent.width * Math.min(1, root.mpPosition / root.mpDuration) : 0
-                        height: 4; radius: 2; color: Colors.color4
-                        Behavior on width { NumberAnimation { duration: 500 } }
-                    }
-                }
-                Item {
-                    width: parent.width; height: 14
-                    Text { anchors.left: parent.left; text: root.fmtTime(root.mpPosition); font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8 }
-                    Text { anchors.right: parent.right; text: root.mpDuration > 0 ? root.fmtTime(root.mpDuration) : "--:--"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8 }
-                }
-            }
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter; spacing: 8
-                Repeater {
-                    model: 3
-                    delegate: Rectangle {
-                        required property int index
-                        width: 54; height: 40; radius: 8
-                        color: ctrlMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25)
-                        Behavior on color { ColorAnimation { duration: 100 } }
-                        Text {
-                            anchors.centerIn: parent
-                            text: index === 0 ? "\uF049" : index === 1 ? (root.mpStatus === "Playing" ? "\uF04C" : "\uF04B") : "\uF050"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 16; color: Colors.foreground
-                        }
-                        MouseArea {
-                            id: ctrlMa; anchors.fill: parent; hoverEnabled: true
-                            onClicked: {
-                                if (index === 0) MprisState.previous()
-                                else if (index === 1) MprisState.playPause()
-                                else MprisState.next()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── Navidrome setup ─────────────────────────────────────────
-        Column {
-            width: parent.width; spacing: 10
-            visible: root.mode === 1 && root.ndView === "setup"
-
-            Text { text: "Navidrome Setup"; font.family: "Iosevka Nerd Font"; font.pixelSize: 13; font.bold: true; color: Colors.foreground }
-
-            Column {
-                width: parent.width; spacing: 6
-                Repeater {
-                    model: [{label: "URL", ph: "http://192.168.88.6:4533"}, {label: "User", ph: "username"}, {label: "Password", ph: "password"}]
-                    delegate: Column {
-                        width: parent.width; spacing: 2
-                        Text { text: modelData.label; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color6 }
-                        Rectangle {
-                            width: parent.width; height: 30; radius: 6
-                            color: Qt.lighter(Colors.background, 1.3)
-                            border.color: setupInput.activeFocus ? Colors.color4 : "transparent"; border.width: 1
-                            TextInput {
-                                id: setupInput; anchors { fill: parent; margins: 8 }
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                                color: Colors.foreground
-                                echoMode: index === 2 ? TextInput.Password : TextInput.Normal
-                                text: index === 0 ? "http://192.168.88.6:4533" : ""
-                                Component.onCompleted: {
-                                    if (index === 0) setupUrl = this
-                                    else if (index === 1) setupUser = this
-                                    else setupPass = this
-                                }
-                            }
-                        }
-                    }
-                }
+            Rectangle {
+                width: 88; height: 88; radius: 12
+                anchors.centerIn: artRect
+                color: "transparent"; border.width: 2
+                border.color: yt.mpvStatus === "Playing"
+                    ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.55)
+                    : "transparent"
+                Behavior on border.color { ColorAnimation { duration: 600 } }
             }
 
             Rectangle {
-                width: parent.width; height: 32; radius: 6
-                color: saveMa.containsMouse ? Qt.lighter(Colors.color4, 1.2) : Colors.color4
-                Behavior on color { ColorAnimation { duration: 100 } }
-                Text { anchors.centerIn: parent; text: "Save & Connect"; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.background }
-                MouseArea {
-                    id: saveMa; anchors.fill: parent; hoverEnabled: true
-                    onClicked: {
-                        if (setupUrl && setupUser && setupPass) {
-                            navi.saveConfig(setupUrl.text, setupUser.text, setupPass.text)
-                            root.ndView = "browse"
+                id: artRect
+                width: 80; height: 80
+                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                radius: 8; color: Qt.lighter(Colors.background, 1.3); clip: true
+                Image {
+                    id: artImg
+                    anchors.fill: parent
+                    source: yt.mpvArt !== "" && (yt.mpvArt.startsWith("file://") || yt.mpvArt.startsWith("http")) ? yt.mpvArt : ""
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true; mipmap: true; asynchronous: true
+                    visible: status === Image.Ready
+                }
+                Text {
+                    anchors.centerIn: parent; text: ""
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 24
+                    color: Colors.color8; visible: artImg.status !== Image.Ready
+                }
+            }
+
+            Column {
+                anchors { left: artRect.right; leftMargin: 12; right: ctrlRow.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                spacing: 4
+                Text { width: parent.width; text: yt.mpvTitle; font.family: "Iosevka Nerd Font"; font.pixelSize: 13; font.bold: true; color: Colors.foreground; elide: Text.ElideRight }
+                Text { width: parent.width; text: yt.mpvArtist; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8; elide: Text.ElideRight; visible: yt.mpvArtist !== "" }
+            }
+
+            Row {
+                id: ctrlRow
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                spacing: 4
+                Repeater {
+                    model: 4
+                    delegate: Rectangle {
+                        required property int index
+                        width: 30; height: 30; radius: 6
+                        color: ytCtlMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25)
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Text {
+                            anchors.centerIn: parent
+                            text: index === 0 ? "" : index === 1 ? (yt.mpvStatus === "Playing" ? "" : "") : index === 2 ? "" : ""
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12; color: Colors.foreground
+                        }
+                        MouseArea {
+                            id: ytCtlMa; anchors.fill: parent; hoverEnabled: true
+                            onClicked: {
+                                if (index === 0) yt.previous()
+                                else if (index === 1) yt.playPause()
+                                else if (index === 2) yt.next()
+                                else yt.stop()
+                            }
                         }
                     }
                 }
             }
         }
 
-        property var setupUrl: null
-        property var setupUser: null
-        property var setupPass: null
-
-        // ── Navidrome browser ───────────────────────────────────────
+        // ── Browser ─────────────────────────────────────────────────
         Column {
             width: parent.width; spacing: 8
-            visible: root.mode === 1 && root.ndView === "browse" && navi.configured
+            visible: yt.configured
 
             // Category pills
             Row {
                 width: parent.width; spacing: 4
                 Repeater {
-                    model: [{k: "albums", l: "Albums"}, {k: "artists", l: "Artists"}, {k: "playlists", l: "Playlists"}, {k: "random", l: "Random"}]
+                    model: [{k: "search", l: "Search"}, {k: "playlists", l: "Playlists"}, {k: "liked", l: "Liked"}]
                     delegate: Rectangle {
-                        width: (parent.width - 12) / 4; height: 24; radius: 6
-                        color: root.ndBrowse === modelData.k ? Colors.color4
+                        required property var modelData
+                        width: (parent.width - 8) / 3; height: 24; radius: 6
+                        color: root.ytBrowse === modelData.k ? Colors.color4
                              : catMa.containsMouse ? Qt.lighter(Colors.background, 1.5)
                              : Qt.lighter(Colors.background, 1.3)
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Text {
                             anchors.centerIn: parent; text: modelData.l
                             font.family: "Iosevka Nerd Font"; font.pixelSize: 9
-                            color: root.ndBrowse === modelData.k ? Colors.background : Colors.foreground
+                            color: root.ytBrowse === modelData.k ? Colors.background : Colors.foreground
                         }
                         MouseArea {
                             id: catMa; anchors.fill: parent; hoverEnabled: true
                             onClicked: {
-                                root.ndBrowse = modelData.k
-                                root.ndView = "browse"
-                                if (modelData.k === "albums") navi.getAlbums()
-                                else if (modelData.k === "artists") navi.getArtists()
-                                else if (modelData.k === "playlists") navi.getPlaylists()
-                                else navi.getRandom()
+                                root.ytBrowse = modelData.k
+                                root.ytView = "browse"
+                                if (modelData.k === "playlists") yt.getPlaylists()
+                                else if (modelData.k === "liked") { yt.getLiked(); root.ytView = "tracks" }
+                                else ytSearchInput.forceActiveFocus()
                             }
                         }
                     }
                 }
             }
 
-            // Now playing bar (compact, if something is playing)
+            // Search field
             Rectangle {
-                width: parent.width; height: 36; radius: 6
-                visible: navi.nowTitle !== ""
-                color: Qt.lighter(Colors.background, 1.2)
-                Row {
-                    anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
-                    spacing: 8
-                    Image {
-                        width: 28; height: 28; anchors.verticalCenter: parent.verticalCenter
-                        source: navi.nowCover; fillMode: Image.PreserveAspectCrop
-                        smooth: true; mipmap: true; asynchronous: true; visible: status === Image.Ready
-                    }
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                        Text { text: navi.nowTitle; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true; color: Colors.foreground; elide: Text.ElideRight; width: 200 }
-                        Text { text: navi.nowArtist; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: 200 }
-                    }
+                width: parent.width; height: 30; radius: 6
+                visible: root.ytBrowse === "search"
+                color: Qt.lighter(Colors.background, 1.3)
+                border.color: ytSearchInput.activeFocus ? Colors.color4 : "transparent"; border.width: 1
+                TextInput {
+                    id: ytSearchInput
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                    verticalAlignment: TextInput.AlignVCenter
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                    color: Colors.foreground; clip: true
+                    onAccepted: { yt.search(text); root.ytView = "tracks" }
                 }
-                Row {
-                    anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                    spacing: 4
-                    Repeater {
-                        model: 3
-                        delegate: Text {
-                            required property int index
-                            text: index === 0 ? "\uF049" : index === 1 ? "\uF04C" : "\uF050"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12; color: npMa.containsMouse ? Colors.color4 : Colors.foreground
-                            MouseArea { id: npMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
-                                onClicked: {
-                                    if (index === 0) navi.prevInQueue()
-                                    else if (index === 1) MprisState.playPause()
-                                    else navi.nextInQueue()
-                                }
-                            }
-                        }
-                    }
+                Text {
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Search YT Music…"; font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                    color: Colors.color8; visible: ytSearchInput.text === "" && !ytSearchInput.activeFocus
                 }
+            }
+
+            // Loading / error line
+            Text {
+                width: parent.width
+                visible: yt.loading || yt.error !== ""
+                text: yt.loading ? "Loading…" : yt.error
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                color: yt.error !== "" ? Colors.color1 : Colors.color8
+                elide: Text.ElideRight
             }
 
             // Content list
             Flickable {
                 width: parent.width
-                height: Math.max(100, root.height - (root.mode === 1 ? 140 : 0) - (navi.nowTitle !== "" ? 46 : 0))
+                height: Math.max(100, root.height - 120 - (yt.nowId !== "" ? 100 : 0))
                 contentHeight: listCol.implicitHeight; clip: true
                 boundsBehavior: Flickable.StopAtBounds
 
                 Column {
                     id: listCol; width: parent.width; spacing: 2
 
-                    // Albums view
-                    Repeater {
-                        model: root.ndBrowse === "albums" ? navi.albums : []
-                        delegate: Rectangle {
-                            required property var modelData
-                            required property int index
-                            width: parent.width; height: 44; radius: 6
-                            color: albMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : "transparent"
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                            Row {
-                                anchors { fill: parent; leftMargin: 6 }
-                                spacing: 8
-                                Image {
-                                    width: 36; height: 36; anchors.verticalCenter: parent.verticalCenter
-                                    source: navi.coverUrl(modelData.coverArt)
-                                    fillMode: Image.PreserveAspectCrop; smooth: true; mipmap: true; asynchronous: true
-                                    Rectangle { anchors.fill: parent; color: "transparent"; radius: 4; border.color: Qt.rgba(1,1,1,0.1); border.width: 1 }
-                                }
-                                Column {
-                                    anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                                    Text { text: modelData.title; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.foreground; elide: Text.ElideRight; width: 260 }
-                                    Text { text: modelData.artist + " \u00B7 " + modelData.songCount + " tracks"; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: 260 }
-                                }
-                            }
-                            MouseArea { id: albMa; anchors.fill: parent; hoverEnabled: true
-                                onClicked: { navi.getAlbum(modelData.id); root.ndView = "tracks" }
-                            }
-                        }
-                    }
-
-                    // Artists view
-                    Repeater {
-                        model: root.ndBrowse === "artists" ? navi.artists : []
-                        delegate: Rectangle {
-                            required property var modelData
-                            width: parent.width; height: 32; radius: 6
-                            color: artMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : "transparent"
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                text: modelData.name + " (" + modelData.albumCount + " albums)"
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.foreground
-                            }
-                            MouseArea { id: artMa; anchors.fill: parent; hoverEnabled: true }
-                        }
-                    }
-
                     // Playlists view
                     Repeater {
-                        model: root.ndBrowse === "playlists" ? navi.playlists : []
+                        model: root.ytBrowse === "playlists" && root.ytView === "browse" ? yt.playlists : []
                         delegate: Rectangle {
                             required property var modelData
                             width: parent.width; height: 32; radius: 6
@@ -353,38 +183,37 @@ Item {
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Text {
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                text: "\u{F0CB9}  " + modelData.name + " (" + modelData.songCount + ")"
+                                text: "\u{F0CB9}  " + modelData.title + (modelData.count !== "" ? " (" + modelData.count + ")" : "")
                                 font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.foreground
                             }
                             MouseArea { id: plMa; anchors.fill: parent; hoverEnabled: true
-                                onClicked: { navi.getPlaylist(modelData.id); root.ndView = "tracks" }
+                                onClicked: { yt.getPlaylist(modelData.id); root.ytView = "tracks" }
                             }
                         }
                     }
 
-                    // Random songs / track list view
+                    // Track list (search results, playlist tracks, liked)
                     Repeater {
-                        model: (root.ndBrowse === "random" || root.ndView === "tracks") ? navi.songs : []
+                        model: (root.ytBrowse === "search" || root.ytView === "tracks") ? yt.songs : []
                         delegate: Rectangle {
                             required property var modelData
                             required property int index
                             width: parent.width; height: 36; radius: 6
-                            color: navi.nowId === modelData.id ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.2)
+                            color: yt.nowId === modelData.id ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.2)
                                  : songMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : "transparent"
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Row {
                                 anchors { fill: parent; leftMargin: 8 }
                                 spacing: 8
-                                Text {
-                                    width: 20; anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.track > 0 ? modelData.track : (index + 1)
-                                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                                    color: Colors.color8; horizontalAlignment: Text.AlignRight
+                                Image {
+                                    width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter
+                                    source: modelData.cover; sourceSize.width: 64; sourceSize.height: 64
+                                    fillMode: Image.PreserveAspectCrop; smooth: true; asynchronous: true
                                 }
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                                    Text { text: modelData.title; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: navi.nowId === modelData.id ? Colors.color4 : Colors.foreground; elide: Text.ElideRight; width: 240 }
-                                    Text { text: modelData.artist; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: 240; visible: modelData.artist !== "" }
+                                    Text { text: modelData.title; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: yt.nowId === modelData.id ? Colors.color4 : Colors.foreground; elide: Text.ElideRight; width: 230 }
+                                    Text { text: modelData.artist; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: 230; visible: modelData.artist !== "" }
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
@@ -393,32 +222,37 @@ Item {
                                 }
                             }
                             MouseArea { id: songMa; anchors.fill: parent; hoverEnabled: true
-                                onClicked: navi.playQueue(navi.songs, index)
+                                onClicked: yt.playQueue(yt.songs, index)
                             }
                         }
                     }
                 }
             }
 
-            // Back button for track view
+            // Back button for playlist track view
             Rectangle {
                 width: 60; height: 24; radius: 6
-                visible: root.ndView === "tracks"
+                visible: root.ytView === "tracks" && root.ytBrowse === "playlists"
                 color: backMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.3)
                 Text { anchors.centerIn: parent; text: "\u{F0141} Back"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.foreground }
-                MouseArea { id: backMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.ndView = "browse" }
+                MouseArea { id: backMa; anchors.fill: parent; hoverEnabled: true; onClicked: { root.ytView = "browse"; yt.getPlaylists() } }
             }
         }
 
         // Not configured message
         Column {
             width: parent.width; spacing: 8
-            visible: root.mode === 1 && !navi.configured && root.ndView !== "setup"
-            Text { text: "Navidrome not configured"; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; color: Colors.color8 }
+            visible: !yt.configured
+            Text { text: "YT Music not configured"; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true; color: Colors.foreground }
+            Text {
+                width: parent.width; wrapMode: Text.WordWrap
+                text: "1. Run:  ytmusicapi browser\n2. Paste request headers from an authenticated music.youtube.com tab\n3. Save to ~/.config/qs-ytmusic/browser.json"
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8
+            }
             Rectangle {
-                width: 80; height: 26; radius: 6; color: Colors.color4
-                Text { anchors.centerIn: parent; text: "Setup"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.background }
-                MouseArea { anchors.fill: parent; onClicked: root.ndView = "setup" }
+                width: 90; height: 26; radius: 6; color: Colors.color4
+                Text { anchors.centerIn: parent; text: "Re-check"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.background }
+                MouseArea { anchors.fill: parent; onClicked: yt.checkStatus() }
             }
         }
     }

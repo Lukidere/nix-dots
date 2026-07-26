@@ -62,7 +62,7 @@ PanelWindow {
         }
     }
     Timer {
-        // ponytail: only focused screen polls - saves N-1 wpctl invocations on multi-monitor
+        // only focused screen polls - saves N-1 wpctl invocations on multi-monitor
         interval: 400; repeat: true
         running: root.modelData.name === NotifState.focusedScreen
         onTriggered: { root._volProc.running = false; root._volProc.running = true }
@@ -91,7 +91,7 @@ PanelWindow {
         }
     }
     Timer {
-        // ponytail: only focused screen polls
+        // only focused screen polls
         interval: 400; repeat: true
         running: root.modelData.name === NotifState.focusedScreen
         onTriggered: { root._brightProc.running = false; root._brightProc.running = true }

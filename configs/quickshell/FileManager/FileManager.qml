@@ -37,7 +37,7 @@ PanelWindow {
         { name: "Home", path: homeDir, icon: "\uf015" },
     ]
 
-    // ponytail: sidebar lists only dirs that exist - checked once at startup
+    // sidebar lists only dirs that exist - checked once at startup
     readonly property Process _bmProc: Process {
         command: ["sh", "-c", 'for d in Documents Downloads Music Pictures Videos; do [ -d "$HOME/$d" ] && echo "$d"; done; true']
         running: true

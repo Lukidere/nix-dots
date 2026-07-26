@@ -24,14 +24,14 @@ QtObject {
         _volHideTimer.restart()
     }
 
-    // ponytail: tight close so quick exits feel responsive
+    // tight close so quick exits feel responsive
     property Timer _hideTimer: Timer {
         interval: 160
         onTriggered: root.activeScreenName = ""
     }
 
     property Timer _volHideTimer: Timer {
-        // ponytail: 220ms grace for diagonal mouse drift between panels
+        // 220ms grace for diagonal mouse drift between panels
         interval: 220
         onTriggered: root.volPanelScreen = ""
     }

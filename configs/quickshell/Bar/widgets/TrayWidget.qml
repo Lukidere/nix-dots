@@ -22,7 +22,7 @@ Item {
                 id: trayBtn
                 required property SystemTrayItem modelData
 
-                // ponytail: hide native wifi/BT applets - bar has its own controls
+                // hide native wifi/BT applets - bar has its own controls
                 readonly property bool _hidden: {
                     const s = ((modelData.id || "") + " " + (modelData.title || "") + " " + (modelData.tooltipTitle || "")).toLowerCase()
                     return /nm-applet|networkmanager|blueman|blueberry|bluetooth/.test(s)
