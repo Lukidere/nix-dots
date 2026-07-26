@@ -110,10 +110,15 @@ Item {
     Timer { interval: 5000; running: true; repeat: true
             onTriggered: { root._eyeProc.running=false; root._eyeProc.running=true } }
 
-    Column {
+    Row {
         id: col
         width: parent.width
-        spacing: 10
+        spacing: 12
+
+        // ── Left column: toggles + calendar (always open) ───────────
+        Column {
+            width: Math.round((parent.width - 12) * 0.54)
+            spacing: 10
 
         Grid {
             width: parent.width
@@ -316,130 +321,84 @@ Item {
             }
         }
 
-        Item {
-            id: calSection
-            width: parent.width
-            height: calHeader.height + calBody.height
-            property bool _expanded: false
-
-            Rectangle {
-                id: calHeader
-                width: parent.width; height: 34; radius: 8
-                color: calSection._expanded
-                    ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.1)
-                    : Qt.lighter(Colors.background, 1.18)
-                Behavior on color { ColorAnimation { duration: 150 } }
-
-                Text {
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 10 }
-                    text: "\uF073  " + Qt.formatDate(new Date(), "dddd, d MMMM yyyy")
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                    color: Colors.foreground
-                }
-                Text {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 10 }
-                    text: calSection._expanded ? "\uF0D8" : "\uF0D7"
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                    color: Colors.color8
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: calSection._expanded = !calSection._expanded
-                }
-            }
-
-            Item {
-                id: calBody
-                anchors { top: calHeader.bottom; left: parent.left; right: parent.right }
-                height: calSection._expanded ? calInner.height + 8 : 0
-                clip: true
-                Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                CalendarWidget {
-                    id: calInner
-                    width: parent.width
-                    anchors.top: parent.top
-                    anchors.topMargin: 6
-                }
+            CalendarWidget {
+                width: parent.width
             }
         }
 
-        Item {
-            id: wxSection
-            width: parent.width
-            height: wxHeader.height + wxBody.height
-            property bool _expanded: false
+        // ── Right column: weather, always expanded, compact ─────────
+        Column {
+            width: parent.width - Math.round((parent.width - 12) * 0.54) - 12
+            spacing: 8
 
-            // Hidden WeatherWidget drives all the data / processes
+            // Hidden data driver
             WeatherWidget {
                 id: wxData
                 width: 1; height: 1
                 visible: false
-                // pause geo + weather fetches while dashboard is closed
                 active: DashboardState.activeScreenName !== ""
             }
 
             Rectangle {
-                id: wxHeader
-                width: parent.width; height: 34; radius: 8
-                color: wxSection._expanded
-                    ? Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.1)
-                    : Qt.lighter(Colors.background, 1.18)
-                Behavior on color { ColorAnimation { duration: 150 } }
-
-                Text {
-                    anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 10 }
-                    text: wxData.wIcon + "  " + wxData.temp + "  " + wxData.desc
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                    color: Colors.foreground
-                }
-                Text {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 10 }
-                    text: wxSection._expanded ? "\uF0D8" : "\uF0D7"
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                    color: Colors.color8
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: wxSection._expanded = !wxSection._expanded
-                }
-            }
-
-            Item {
-                id: wxBody
-                anchors { top: wxHeader.bottom; left: parent.left; right: parent.right }
-                height: wxSection._expanded ? wxForecast.implicitHeight + 8 : 0
-                clip: true
-                Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                width: parent.width
+                height: wxCol.implicitHeight + 20
+                radius: 10
+                color: Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.08)
+                border.color: Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.25)
+                border.width: 1
 
                 Column {
-                    id: wxForecast
-                    width: parent.width
-                    anchors.top: parent.top
-                    anchors.topMargin: 6
-                    spacing: 4
+                    id: wxCol
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
+                    spacing: 6
+
+                    Row {
+                        spacing: 8
+                        Text {
+                            text: wxData.wIcon
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 26
+                            color: Colors.color3
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Column {
+                            spacing: 1
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text {
+                                text: wxData.temp
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 16; font.bold: true
+                                color: Colors.foreground
+                            }
+                            Text {
+                                text: wxData.desc
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                                color: Colors.color6
+                            }
+                        }
+                    }
+
+                    Rectangle { width: parent.width; height: 1; color: Qt.rgba(Colors.color3.r, Colors.color3.g, Colors.color3.b, 0.2) }
 
                     Repeater {
                         model: wxData.forecast
                         delegate: Item {
                             required property var modelData
-                            width: wxForecast.width; height: 22
+                            width: wxCol.width; height: 20
                             Text {
                                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                                 text: modelData.day
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-                                color: Colors.color8; width: 32
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 9
+                                color: Colors.color8
                             }
                             Text {
-                                anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 36 }
+                                anchors { left: parent.left; leftMargin: 30; verticalCenter: parent.verticalCenter }
                                 text: modelData.icon
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 14
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 12
                                 color: Colors.foreground
                             }
                             Text {
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                text: modelData.high + "\u00B0 / " + modelData.low + "\u00B0"
-                                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                                text: modelData.high + "\u00B0/" + modelData.low + "\u00B0"
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 9
                                 color: Colors.color6
                             }
                         }

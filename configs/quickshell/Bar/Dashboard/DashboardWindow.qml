@@ -254,7 +254,7 @@ PanelWindow {
         height: DashboardState.activeScreenName === root.modelData.name ? panel.y + panel.height + 16 : 22
 
         // bumped 22% → 26% to accommodate 56 px sidebar rail
-        readonly property int panelW: Math.min(520, Math.max(440, Math.round(parent.width * 0.26)))
+        readonly property int panelW: Math.min(680, Math.max(560, Math.round(parent.width * 0.34)))
         readonly property int catchW: panelW
 
         HoverHandler {
@@ -269,7 +269,7 @@ PanelWindow {
             // center inside wider catch zone (catchW), wrapper no longer hugs panel
             x: Math.round((hoverWrapper.catchW - hoverWrapper.panelW) / 2)
             y: DashboardState.activeScreenName === root.modelData.name ? 8 : -14
-            width: hoverWrapper.panelW; height: 700
+            width: hoverWrapper.panelW; height: 620
             radius: 14
             color: Qt.darker(Colors.background, 1.07)
             border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.35)
@@ -467,30 +467,10 @@ PanelWindow {
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
 
-                    // Ambient album-art tint behind media content
-                    Image {
-                        anchors { left: parent.left; right: parent.right; top: parent.top }
-                        height: 110
-                        source: mediaSection.artUrl
-                        fillMode: Image.PreserveAspectCrop
-                        opacity: 0.13
-                        smooth: true; mipmap: true; asynchronous: true
-                        visible: status === Image.Ready
-                        // Fade to panel background at the bottom
-                        Rectangle {
-                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                            height: parent.height
-                            gradient: Gradient {
-                                orientation: Gradient.Vertical
-                                GradientStop { position: 0.0; color: "transparent" }
-                                GradientStop { position: 1.0; color: Qt.darker(Colors.background, 1.07) }
-                            }
-                        }
-                    }
-
                     MediaSection {
                         id: mediaSection
                         anchors.fill: parent
+                        accent: panel.accent
                     }
                 }
 
@@ -517,19 +497,19 @@ PanelWindow {
                     visible: opacity > 0
                     clip: true
                     Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
-                    Column {
-                        width: parent.width; spacing: Space.md
-
-                        SectionHead { label: "NOTIFICATIONS"; ico: ""; accent: panel.accent }
-                        NotificationCenter {
-                            width: parent.width
-                            height: Math.round(contentArea.height * 0.50)
+                    Row {
+                        anchors.fill: parent; spacing: Space.md
+                        Column {
+                            width: (parent.width - Space.md) / 2; height: parent.height
+                            spacing: Space.sm
+                            SectionHead { label: "NOTIFICATIONS"; ico: ""; accent: panel.accent }
+                            NotificationCenter { width: parent.width; height: parent.height - 36 - Space.sm }
                         }
-
-                        SectionHead { label: "CLIPBOARD"; ico: ""; accent: panel.accent }
-                        ClipboardHistory {
-                            width: parent.width
-                            height: Math.round(contentArea.height * 0.34)
+                        Column {
+                            width: (parent.width - Space.md) / 2; height: parent.height
+                            spacing: Space.sm
+                            SectionHead { label: "CLIPBOARD"; ico: ""; accent: panel.accent }
+                            ClipboardHistory { width: parent.width; height: parent.height - 36 - Space.sm }
                         }
                     }
                 }
@@ -548,18 +528,33 @@ PanelWindow {
                         anchors.fill: parent
                         active: tab4._loaded
                         sourceComponent: Component {
-                            Flickable {
-                                contentHeight: sysCol.implicitHeight
-                                clip: true
+                            Row {
+                                spacing: Space.md
                                 Column {
-                                    id: sysCol
-                                    width: parent.width; spacing: Space.md
-
+                                    width: Math.round((tab4.width - Space.md) * 0.46); height: tab4.height
+                                    spacing: Space.sm
                                     SectionHead { label: "OVERVIEW"; ico: ""; accent: panel.accent }
-                                    SystemInfo { width: parent.width }
-
+                                    Flickable {
+                                        width: parent.width; height: parent.height - 36 - Space.sm
+                                        contentHeight: sysCol.implicitHeight; clip: true
+                                        boundsBehavior: Flickable.StopAtBounds
+                                        Column { id: sysCol; width: parent.width
+                                            SystemInfo { width: parent.width }
+                                        }
+                                    }
+                                }
+                                Column {
+                                    width: tab4.width - Math.round((tab4.width - Space.md) * 0.46) - Space.md; height: tab4.height
+                                    spacing: Space.sm
                                     SectionHead { label: "PERFORMANCE"; ico: ""; accent: panel.accent }
-                                    Performance { width: parent.width }
+                                    Flickable {
+                                        width: parent.width; height: parent.height - 36 - Space.sm
+                                        contentHeight: perfCol.implicitHeight; clip: true
+                                        boundsBehavior: Flickable.StopAtBounds
+                                        Column { id: perfCol; width: parent.width
+                                            Performance { width: parent.width }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -580,19 +575,26 @@ PanelWindow {
                         anchors.fill: parent
                         active: tab5._loaded
                         sourceComponent: Component {
-                            Flickable {
-                                contentHeight: pomoTaskCol.implicitHeight
-                                clip: true
-                                boundsBehavior: Flickable.StopAtBounds
+                            Row {
+                                spacing: Space.md
                                 Column {
-                                    id: pomoTaskCol
-                                    width: parent.width; spacing: Space.md
-
+                                    width: Math.round((tab5.width - Space.md) * 0.46); height: tab5.height
+                                    spacing: Space.sm
                                     SectionHead { label: "POMODORO"; ico: ""; accent: panel.accent }
                                     PomodoroTimer { width: parent.width }
-
+                                }
+                                Column {
+                                    width: tab5.width - Math.round((tab5.width - Space.md) * 0.46) - Space.md; height: tab5.height
+                                    spacing: Space.sm
                                     SectionHead { label: "TASKS"; ico: ""; accent: panel.accent }
-                                    TodoList { width: parent.width }
+                                    Flickable {
+                                        width: parent.width; height: parent.height - 36 - Space.sm
+                                        contentHeight: todoCol.implicitHeight; clip: true
+                                        boundsBehavior: Flickable.StopAtBounds
+                                        Column { id: todoCol; width: parent.width
+                                            TodoList { width: parent.width }
+                                        }
+                                    }
                                 }
                             }
                         }

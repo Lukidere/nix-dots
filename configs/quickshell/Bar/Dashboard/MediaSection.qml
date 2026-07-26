@@ -1,13 +1,22 @@
 import QtQuick
 import "../../Theme"
 
-// Music tab - YT Music only. The bar's Mpris widget stays generic;
-// everything here targets the dashboard-owned mpv player.
+// Music tab - YT Music, horizontal: player left, browser right.
 Item {
     id: root
 
+    // Accent injected by DashboardWindow (per-tab color)
+    property color accent: root.accent
+
+    // Art: prefer mpv's mpris artUrl, fall back to the queued track's cover
+    readonly property string _queueCover: {
+        if (yt.nowId === "") return ""
+        const t = yt.songs.find(x => x.id === yt.nowId)
+        return t ? t.cover : ""
+    }
+    readonly property string _art: yt.mpvArt !== "" ? yt.mpvArt : _queueCover
     // Exposed for ambient-art consumers in DashboardWindow
-    property string artUrl: yt.mpvArt
+    property string artUrl: _art
 
     function fmtTime(s) {
         const m = Math.floor(s / 60)
@@ -20,67 +29,95 @@ Item {
     property string ytBrowse: "search"  // search, playlists, liked
     property string ytView: "browse"    // browse, tracks
 
-    Column {
+    Row {
         anchors.fill: parent
-        spacing: 10
+        spacing: 14
+        visible: yt.configured
 
-        // ── Now playing header (mpv) ────────────────────────────────
-        Item {
-            width: parent.width; height: 90
-            visible: yt.nowId !== ""
+        // ── Left: player ────────────────────────────────────────────
+        Column {
+            id: playerCol
+            width: Math.round((parent.width - 14) * 0.38)
+            spacing: 10
+            anchors.verticalCenter: parent.verticalCenter
 
-            Rectangle {
-                width: 88; height: 88; radius: 12
-                anchors.centerIn: artRect
-                color: "transparent"; border.width: 2
-                border.color: yt.mpvStatus === "Playing"
-                    ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.55)
-                    : "transparent"
-                Behavior on border.color { ColorAnimation { duration: 600 } }
-            }
+            Item {
+                width: parent.width
+                height: width
 
-            Rectangle {
-                id: artRect
-                width: 80; height: 80
-                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                radius: 8; color: Qt.lighter(Colors.background, 1.3); clip: true
-                Image {
-                    id: artImg
-                    anchors.fill: parent
-                    source: yt.mpvArt !== "" && (yt.mpvArt.startsWith("file://") || yt.mpvArt.startsWith("http")) ? yt.mpvArt : ""
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true; mipmap: true; asynchronous: true
-                    visible: status === Image.Ready
+                Rectangle {
+                    anchors.fill: artRect
+                    anchors.margins: -6
+                    radius: artRect.radius + 6
+                    color: "transparent"; border.width: 2
+                    border.color: yt.mpvStatus === "Playing"
+                        ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.55)
+                        : "transparent"
+                    Behavior on border.color { ColorAnimation { duration: 600 } }
                 }
-                Text {
-                    anchors.centerIn: parent; text: ""
-                    font.family: "Iosevka Nerd Font"; font.pixelSize: 24
-                    color: Colors.color8; visible: artImg.status !== Image.Ready
+                Rectangle {
+                    id: artRect
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    radius: 12; color: Qt.lighter(Colors.background, 1.3); clip: true
+                    Image {
+                        id: artImg
+                        anchors.fill: parent
+                        source: root._art !== "" && (root._art.startsWith("file://") || root._art.startsWith("http")) ? root._art : ""
+                        fillMode: Image.PreserveAspectCrop
+                        sourceSize.width: 512; sourceSize.height: 512
+                        smooth: true; mipmap: true; asynchronous: true
+                        visible: status === Image.Ready
+                    }
+                    Text {
+                        anchors.centerIn: parent; text: "\uF001"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 48
+                        color: Colors.color8; visible: artImg.status !== Image.Ready
+                    }
                 }
             }
 
             Column {
-                anchors { left: artRect.right; leftMargin: 12; right: ctrlRow.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                spacing: 4
-                Text { width: parent.width; text: yt.mpvTitle; font.family: "Iosevka Nerd Font"; font.pixelSize: 13; font.bold: true; color: Colors.foreground; elide: Text.ElideRight }
-                Text { width: parent.width; text: yt.mpvArtist; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: Colors.color8; elide: Text.ElideRight; visible: yt.mpvArtist !== "" }
+                width: parent.width; spacing: 3
+                Text {
+                    width: parent.width
+                    text: yt.mpvTitle !== "" ? yt.mpvTitle : "Nothing playing"
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 14; font.bold: true
+                    color: yt.mpvTitle !== "" ? Colors.foreground : Colors.color8
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                Text {
+                    width: parent.width
+                    text: yt.mpvArtist
+                    font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                    color: Colors.color8; elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                    visible: yt.mpvArtist !== ""
+                }
             }
 
             Row {
-                id: ctrlRow
-                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                spacing: 4
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 6
                 Repeater {
                     model: 4
                     delegate: Rectangle {
                         required property int index
-                        width: 30; height: 30; radius: 6
-                        color: ytCtlMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25)
+                        width: index === 1 ? 44 : 34
+                        height: index === 1 ? 44 : 34
+                        radius: index === 1 ? 22 : 17
+                        color: index === 1
+                            ? (ytCtlMa.containsMouse ? Qt.lighter(root.accent, 1.15) : root.accent)
+                            : (ytCtlMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25))
                         Behavior on color { ColorAnimation { duration: 100 } }
+                        anchors.verticalCenter: parent.verticalCenter
                         Text {
                             anchors.centerIn: parent
-                            text: index === 0 ? "" : index === 1 ? (yt.mpvStatus === "Playing" ? "" : "") : index === 2 ? "" : ""
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12; color: Colors.foreground
+                            text: index === 0 ? "\uF048" : index === 1 ? (yt.mpvStatus === "Playing" ? "\uF04C" : "\uF04B") : index === 2 ? "\uF051" : "\uF04D"
+                            font.family: "Iosevka Nerd Font"
+                            font.pixelSize: index === 1 ? 15 : 12
+                            color: index === 1 ? Colors.background : Colors.foreground
                         }
                         MouseArea {
                             id: ytCtlMa; anchors.fill: parent; hoverEnabled: true
@@ -96,10 +133,11 @@ Item {
             }
         }
 
-        // ── Browser ─────────────────────────────────────────────────
+        // ── Right: browser ──────────────────────────────────────────
         Column {
-            width: parent.width; spacing: 8
-            visible: yt.configured
+            width: parent.width - playerCol.width - 14
+            height: parent.height
+            spacing: 8
 
             // Category pills
             Row {
@@ -109,7 +147,7 @@ Item {
                     delegate: Rectangle {
                         required property var modelData
                         width: (parent.width - 8) / 3; height: 24; radius: 6
-                        color: root.ytBrowse === modelData.k ? Colors.color4
+                        color: root.ytBrowse === modelData.k ? root.accent
                              : catMa.containsMouse ? Qt.lighter(Colors.background, 1.5)
                              : Qt.lighter(Colors.background, 1.3)
                         Behavior on color { ColorAnimation { duration: 100 } }
@@ -137,7 +175,7 @@ Item {
                 width: parent.width; height: 30; radius: 6
                 visible: root.ytBrowse === "search"
                 color: Qt.lighter(Colors.background, 1.3)
-                border.color: ytSearchInput.activeFocus ? Colors.color4 : "transparent"; border.width: 1
+                border.color: ytSearchInput.activeFocus ? root.accent : "transparent"; border.width: 1
                 TextInput {
                     id: ytSearchInput
                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -166,7 +204,7 @@ Item {
             // Content list
             Flickable {
                 width: parent.width
-                height: Math.max(100, root.height - 120 - (yt.nowId !== "" ? 100 : 0))
+                height: parent.height - y - (backBtn.visible ? 30 : 0)
                 contentHeight: listCol.implicitHeight; clip: true
                 boundsBehavior: Flickable.StopAtBounds
 
@@ -199,11 +237,11 @@ Item {
                             required property var modelData
                             required property int index
                             width: parent.width; height: 36; radius: 6
-                            color: yt.nowId === modelData.id ? Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.2)
+                            color: yt.nowId === modelData.id ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.2)
                                  : songMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : "transparent"
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Row {
-                                anchors { fill: parent; leftMargin: 8 }
+                                anchors { fill: parent; leftMargin: 8; rightMargin: 40 }
                                 spacing: 8
                                 Image {
                                     width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter
@@ -212,14 +250,14 @@ Item {
                                 }
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                                    Text { text: modelData.title; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: yt.nowId === modelData.id ? Colors.color4 : Colors.foreground; elide: Text.ElideRight; width: 230 }
-                                    Text { text: modelData.artist; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: 230; visible: modelData.artist !== "" }
+                                    Text { text: modelData.title; font.family: "Iosevka Nerd Font"; font.pixelSize: 11; color: yt.nowId === modelData.id ? root.accent : Colors.foreground; elide: Text.ElideRight; width: Math.max(60, listCol.width - 110) }
+                                    Text { text: modelData.artist; font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8; elide: Text.ElideRight; width: Math.max(60, listCol.width - 110); visible: modelData.artist !== "" }
                                 }
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.fmtTime(modelData.duration)
-                                    font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8
-                                }
+                            }
+                            Text {
+                                anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                text: root.fmtTime(modelData.duration)
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8
                             }
                             MouseArea { id: songMa; anchors.fill: parent; hoverEnabled: true
                                 onClicked: yt.playQueue(yt.songs, index)
@@ -231,6 +269,7 @@ Item {
 
             // Back button for playlist track view
             Rectangle {
+                id: backBtn
                 width: 60; height: 24; radius: 6
                 visible: root.ytView === "tracks" && root.ytBrowse === "playlists"
                 color: backMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.3)
@@ -238,22 +277,22 @@ Item {
                 MouseArea { id: backMa; anchors.fill: parent; hoverEnabled: true; onClicked: { root.ytView = "browse"; yt.getPlaylists() } }
             }
         }
+    }
 
-        // Not configured message
-        Column {
-            width: parent.width; spacing: 8
-            visible: !yt.configured
-            Text { text: "YT Music not configured"; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true; color: Colors.foreground }
-            Text {
-                width: parent.width; wrapMode: Text.WordWrap
-                text: "1. Run:  ytmusicapi browser\n2. Paste request headers from an authenticated music.youtube.com tab\n3. Save to ~/.config/qs-ytmusic/browser.json"
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8
-            }
-            Rectangle {
-                width: 90; height: 26; radius: 6; color: Colors.color4
-                Text { anchors.centerIn: parent; text: "Re-check"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.background }
-                MouseArea { anchors.fill: parent; onClicked: yt.checkStatus() }
-            }
+    // Not configured message
+    Column {
+        width: parent.width; spacing: 8
+        visible: !yt.configured
+        Text { text: "YT Music not configured"; font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true; color: Colors.foreground }
+        Text {
+            width: parent.width; wrapMode: Text.WordWrap
+            text: "1. Run:  ytmusicapi browser\n2. Paste request headers from an authenticated music.youtube.com tab\n3. Save to ~/.config/qs-ytmusic/browser.json"
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.color8
+        }
+        Rectangle {
+            width: 90; height: 26; radius: 6; color: root.accent
+            Text { anchors.centerIn: parent; text: "Re-check"; font.family: "Iosevka Nerd Font"; font.pixelSize: 10; color: Colors.background }
+            MouseArea { anchors.fill: parent; onClicked: yt.checkStatus() }
         }
     }
 }

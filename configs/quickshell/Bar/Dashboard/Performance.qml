@@ -110,64 +110,79 @@ Item {
         }
     }
 
-    component MetricRow: Column {
-        id: mr
+    component VertBar: Column {
+        id: vb
         property string label: ""
         property string value: ""
         property real   pct:   0
         property color  clr:   Colors.color4
-        spacing: 4
+        spacing: 6
 
-        Item {
-            width: mr.width; height: 14
-            Text {
-                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                text: mr.label
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 12
-                color: Colors.foreground
-            }
-            Text {
-                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                text: mr.value
-                font.family: "Iosevka Nerd Font"; font.pixelSize: 11
-                color: Colors.color6
-            }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: vb.value
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+            color: Colors.color6
         }
         Rectangle {
-            width: mr.width; height: 4; radius: 2
-            color: Qt.lighter(Colors.background, 1.4)
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 30; height: 130; radius: 6
+            color: Qt.lighter(Colors.background, 1.35)
             Rectangle {
-                width: parent.width * Math.max(0, Math.min(1, mr.pct/100))
-                height: 4; radius: 2; color: mr.clr
-                Behavior on width { NumberAnimation { duration: 400 } }
+                anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+                height: parent.height * Math.max(0, Math.min(1, vb.pct/100))
+                radius: 6; color: vb.clr
+                Behavior on height { NumberAnimation { duration: 400 } }
             }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: vb.label
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+            color: Colors.foreground
         }
     }
 
     Column {
         id: col
         width: parent.width
-        spacing: 10
+        spacing: 12
 
-        MetricRow {
-            width: col.width; label: "CPU"
-            value: Math.round(root.cpuPct) + "%"; pct: root.cpuPct
-            clr: root.cpuPct > 80 ? Colors.color1 : root.cpuPct > 50 ? Colors.color3 : Colors.color2
-        }
-        MetricRow {
-            width: col.width; label: "GPU"
-            value: root.gpuReady ? Math.round(root.gpuPct) + "%" : "N/A"
-            pct: root.gpuReady ? root.gpuPct : 0
-            clr: root.gpuPct > 80 ? Colors.color1 : root.gpuPct > 50 ? Colors.color3 : Colors.color2
-            visible: root.gpuReady
-        }
-        MetricRow { width: col.width; label: "Memory"; value: root.ramLabel;  pct: root.ramPct;  clr: Colors.color4 }
-        MetricRow { width: col.width; label: "Disk";   value: root.diskLabel; pct: root.diskPct; clr: Colors.color5 }
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 22
 
-        Text {
-            text: "Load  " + root.loadAvg + "   ·   Up " + root.uptimeStr
-            font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-            color: Colors.color6
+            VertBar {
+                label: "CPU"
+                value: Math.round(root.cpuPct) + "%"; pct: root.cpuPct
+                clr: root.cpuPct > 80 ? Colors.color1 : root.cpuPct > 50 ? Colors.color3 : Colors.color2
+            }
+            VertBar {
+                label: "GPU"
+                value: root.gpuReady ? Math.round(root.gpuPct) + "%" : "N/A"
+                pct: root.gpuReady ? root.gpuPct : 0
+                clr: root.gpuPct > 80 ? Colors.color1 : root.gpuPct > 50 ? Colors.color3 : Colors.color2
+                visible: root.gpuReady
+            }
+            VertBar { label: "RAM";  value: Math.round(root.ramPct) + "%";  pct: root.ramPct;  clr: Colors.color4 }
+            VertBar { label: "Disk"; value: Math.round(root.diskPct) + "%"; pct: root.diskPct; clr: Colors.color5 }
+        }
+
+        Column {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 3
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: root.ramLabel + " RAM   ·   " + root.diskLabel + " disk"
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                color: Colors.color6
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Load  " + root.loadAvg + "   ·   Up " + root.uptimeStr
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                color: Colors.color6
+            }
         }
     }
 }

@@ -17,12 +17,6 @@ Item {
     Item {
         id: header
         width: parent.width; height: 20
-        Text {
-            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-            text: "NOTIFICATIONS"
-            font.family: "Iosevka Nerd Font"; font.pixelSize: 10
-            color: Colors.color6
-        }
         Row {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
             spacing: 8
