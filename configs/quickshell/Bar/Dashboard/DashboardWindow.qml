@@ -388,7 +388,7 @@ PanelWindow {
                     leftMargin: Space.sm; topMargin: Space.md; bottomMargin: Space.md
                 }
                 width: 56
-                readonly property int slotH: Math.floor(height / 6)
+                readonly property int slotH: Math.floor(height / 7)
 
                 // Animated active indicator
                 Rectangle {
@@ -401,7 +401,7 @@ PanelWindow {
                 }
 
                 Repeater {
-                    model: 6
+                    model: 7
                     delegate: Item {
                         id: railSlot
                         required property int index
@@ -426,10 +426,26 @@ PanelWindow {
                             color: panel.activeTab === railSlot.index ? panel.accent : Colors.color8
                             Behavior on color { ColorAnimation { duration: Space.med } }
                         }
+                        Rectangle {
+                            visible: railSlot.index === 6 && GmailState.unreadCount > 0
+                            anchors { top: parent.top; right: parent.right; topMargin: 8; rightMargin: 8 }
+                            width: Math.max(14, badgeCount.implicitWidth + 6); height: 14; radius: 7
+                            color: Tab.accent(6)
+                            Text {
+                                id: badgeCount
+                                anchors.centerIn: parent
+                                text: GmailState.unreadCount > 99 ? "99+" : GmailState.unreadCount
+                                font.family: "Iosevka Nerd Font"; font.pixelSize: 8; font.bold: true
+                                color: Colors.background
+                            }
+                        }
                         MouseArea {
                             id: railMa
                             anchors.fill: parent; hoverEnabled: true
-                            onClicked: panel.activeTab = railSlot.index
+                            onClicked: {
+                                panel.activeTab = railSlot.index
+                                if (railSlot.index === 6) GmailState.refresh()
+                            }
                         }
                     }
                 }
@@ -595,6 +611,33 @@ PanelWindow {
                                             TodoList { width: parent.width }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Tab 6 - Mail (lazy-loaded)
+                Item {
+                    id: tab6
+                    anchors.fill: parent
+                    opacity: panel.activeTab === 6 ? 1 : 0
+                    visible: opacity > 0
+                    clip: true
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
+                        anchors.fill: parent
+                        active: tab6._loaded
+                        sourceComponent: Component {
+                            Column {
+                                spacing: Space.sm
+                                SectionHead { label: "MAIL"; ico: "\uF0E0"; accent: panel.accent }
+                                MailSection {
+                                    width: tab6.width
+                                    height: tab6.height - 36 - Space.sm
+                                    accent: panel.accent
                                 }
                             }
                         }

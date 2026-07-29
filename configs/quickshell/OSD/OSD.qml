@@ -32,41 +32,7 @@ PanelWindow {
         else _closeTimer.restart()
     }
 
-    property int  _lastVol:    -1
-    property bool _lastMuted:  false
     property int  _lastBright: -1
-
-    // ── Volume polling ───────────────────────────────────────────────
-    readonly property Process _volProc: Process {
-        command: ["sh", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const line = this.text.trim()
-                const m = line.match(/Volume:\s*([\d.]+)/)
-                if (!m) return
-                const v     = Math.round(parseFloat(m[1]) * 100)
-                const muted = line.includes("[MUTED]")
-                if (root._lastVol >= 0 && (v !== root._lastVol || muted !== root._lastMuted)
-                        && root.modelData.name === NotifState.focusedScreen
-                        && DashboardState.volPanelScreen !== root.modelData.name) {
-                    root.osdType    = "volume"
-                    root.osdValue   = v
-                    root.osdMuted   = muted
-                    root.osdVisible = true
-                    hideTimer.restart()
-                }
-                root._lastVol   = v
-                root._lastMuted = muted
-            }
-        }
-    }
-    Timer {
-        // only focused screen polls - saves N-1 wpctl invocations on multi-monitor
-        interval: 400; repeat: true
-        running: root.modelData.name === NotifState.focusedScreen
-        onTriggered: { root._volProc.running = false; root._volProc.running = true }
-    }
 
     // ── Brightness polling ───────────────────────────────────────────
     readonly property Process _brightProc: Process {

@@ -23,7 +23,7 @@
     {
       nixosConfigurations = {
         "legion" = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
+          # platform comes from hardware-configuration.nix (nixpkgs.hostPlatform)
           specialArgs = { inherit inputs; };
           modules = [
             agenix.nixosModules.default

@@ -1,3 +1,4 @@
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -55,6 +56,8 @@ Item {
     property string mpvTitle:  ""
     property string mpvArtist: ""
     property string mpvArt:    ""
+    property real   mpvPosition: 0
+    property real   mpvDuration: 0
 
     function playPause() { _ctl(["playerctl", "-p", "mpv", "play-pause"]) }
     function next()      { _ctl(["playerctl", "-p", "mpv", "next"]) }
@@ -69,13 +72,14 @@ Item {
     }
     readonly property Process _pollProc: Process {
         command: ["sh", "-c",
-            "playerctl -p mpv status 2>/dev/null; playerctl -p mpv metadata --format '{{title}}\n{{artist}}\n{{mpris:artUrl}}' 2>/dev/null"]
+            "playerctl -p mpv status 2>/dev/null; playerctl -p mpv metadata --format '{{title}}\n{{artist}}\n{{mpris:artUrl}}\n{{mpris:length}}' 2>/dev/null; playerctl -p mpv position 2>/dev/null"]
         stdout: StdioCollector {
             onStreamFinished: {
                 // mpv gone (queue ended / killed): clear state, timer stops itself
                 if (this.text.trim() === "" && !root._player.running) {
                     root.nowId = ""
                     root.mpvStatus = ""; root.mpvTitle = ""; root.mpvArtist = ""; root.mpvArt = ""
+                    root.mpvPosition = 0; root.mpvDuration = 0
                     return
                 }
                 const l = this.text.split("\n")
@@ -83,6 +87,8 @@ Item {
                 root.mpvTitle  = l[1] || ""
                 root.mpvArtist = l[2] || ""
                 root.mpvArt    = l[3] || ""
+                root.mpvDuration = (parseInt(l[4]) || 0) / 1000000
+                root.mpvPosition = parseFloat(l[5]) || 0
             }
         }
     }

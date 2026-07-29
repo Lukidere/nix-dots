@@ -9,6 +9,11 @@ PanelWindow {
     property bool isRight:  false
     screen: modelData
     color: "transparent"
+    // volume strip only on the desktop's true right edge - on inner monitor
+    // boundaries it fires while crossing screens and steals the dashboard
+    readonly property bool _atRightEdge: !Quickshell.screens.some(o =>
+        o.name !== root.modelData.name && o.x >= root.modelData.x + root.modelData.width)
+    visible: !root.isRight || _atRightEdge
     anchors {
         // right strip spans top+bottom; H strips span left+right
         top:    !root.isBottom
@@ -33,7 +38,7 @@ PanelWindow {
         width:  root.isRight ? parent.width : hitW
         height: root.isRight ? hitH : parent.height
         // hit zone matches panel size (DashboardWindow panelW formula + volPanelRect height)
-        readonly property int hitW: Math.min(520, Math.max(440, Math.round(parent.width * 0.26)))
+        readonly property int hitW: Math.min(680, Math.max(560, Math.round(parent.width * 0.34)))
         readonly property int hitH: 380
 
         Timer {

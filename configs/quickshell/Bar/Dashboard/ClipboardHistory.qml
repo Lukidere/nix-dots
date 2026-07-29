@@ -17,11 +17,21 @@ Item {
         onTriggered: clipWatcher.running = true
     }
 
+    // watcher only signals "clipboard changed" (one line per event);
+    // content is fetched by a one-shot read so multi-line entries survive
     Process {
         id: clipWatcher
-        command: ["wl-paste", "--watch", "cat"]
+        command: ["wl-paste", "--watch", "echo"]
         running: true
         onRunningChanged: if (!running) clipRestartTimer.start()
+        stdout: SplitParser {
+            onRead: { _clipRead.running = false; _clipRead.running = true }
+        }
+    }
+    Process {
+        id: _clipRead
+        command: ["wl-paste", "--no-newline"]
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const clip = this.text.trim()

@@ -6,7 +6,7 @@ Item {
     id: root
 
     // Accent injected by DashboardWindow (per-tab color)
-    property color accent: root.accent
+    property color accent: Colors.color4
 
     // Art: prefer mpv's mpris artUrl, fall back to the queued track's cover
     readonly property string _queueCover: {
@@ -24,7 +24,7 @@ Item {
         return m + ":" + (ss < 10 ? "0" : "") + ss
     }
 
-    YtMusicClient { id: yt }
+    readonly property var yt: YtMusicState
 
     property string ytBrowse: "search"  // search, playlists, liked
     property string ytView: "browse"    // browse, tracks
@@ -94,6 +94,26 @@ Item {
                     color: Colors.color8; elide: Text.ElideRight
                     horizontalAlignment: Text.AlignHCenter
                     visible: yt.mpvArtist !== ""
+                }
+            }
+
+            // Track progress
+            Column {
+                width: parent.width; spacing: 3
+                visible: yt.mpvDuration > 0
+                Rectangle {
+                    width: parent.width; height: 4; radius: 2
+                    color: Qt.lighter(Colors.background, 1.4)
+                    Rectangle {
+                        width: parent.width * Math.min(1, yt.mpvPosition / Math.max(1, yt.mpvDuration))
+                        height: 4; radius: 2; color: root.accent
+                        Behavior on width { NumberAnimation { duration: 500 } }
+                    }
+                }
+                Item {
+                    width: parent.width; height: 12
+                    Text { anchors.left: parent.left; text: root.fmtTime(yt.mpvPosition); font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8 }
+                    Text { anchors.right: parent.right; text: root.fmtTime(yt.mpvDuration); font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8 }
                 }
             }
 

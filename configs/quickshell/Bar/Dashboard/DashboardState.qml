@@ -16,6 +16,7 @@ QtObject {
     }
 
     function showVolPanel(screenName) {
+        if (root.activeScreenName === screenName) return
         _volHideTimer.stop()
         root.volPanelScreen = screenName
     }

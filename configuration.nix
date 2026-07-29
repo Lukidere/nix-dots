@@ -11,7 +11,7 @@
 }:
 let
   unstable = import inputs.unstable {
-    inherit (pkgs) system;
+    system = pkgs.stdenv.hostPlatform.system;
     config.allowUnfree = true;
   };
 in
@@ -337,7 +337,7 @@ in
     lua-language-server
     ruff
     deadnix
-    nixfmt-rfc-style
+    nixfmt
     shfmt
     shellcheck
     prettier
