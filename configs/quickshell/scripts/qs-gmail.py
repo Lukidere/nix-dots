@@ -43,6 +43,12 @@ def dec(value):
 
 
 def connect():
+    # tighten perms defensively - dir 700, file 600
+    try:
+        os.chmod(os.path.dirname(CRED), 0o700)
+        os.chmod(CRED, 0o600)
+    except OSError:
+        pass
     with open(CRED) as f:
         user, _, pw = f.read().strip().partition(":")
     if not user or not pw:

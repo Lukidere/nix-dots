@@ -225,7 +225,7 @@ in
     enable = true;
     qemu = {
       package = pkgs.qemu_kvm;
-      runAsRoot = true;
+      runAsRoot = false;
       swtpm.enable = true; # Emulacja TPM (np. dla Windows 11)
     };
   };
@@ -274,7 +274,8 @@ in
   virtualisation.oci-containers = {
     backend = "docker";
     containers.bgutil-pot = {
-      image = "brainicism/bgutil-ytdlp-pot-provider:1.3.1";
+      # digest-pinned (1.3.1) - tags are mutable, digest locks exact content
+      image = "brainicism/bgutil-ytdlp-pot-provider@sha256:1aaa43a0ca72dfca6a6d2129a0fb4a23465c25adb1b043f8aff829a20825646b";
       ports = [ "127.0.0.1:4416:4416" ];
       extraOptions = [ "--init" ];
     };

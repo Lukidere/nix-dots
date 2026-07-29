@@ -64,13 +64,13 @@ PanelWindow {
     // --- FIFO trigger ---
     readonly property string _fifoPath: Quickshell.env("XDG_RUNTIME_DIR") + "/qs-fm"
     readonly property Process _setup: Process {
-        command: ["sh", "-c", "rm -f " + JSON.stringify(root._fifoPath) + "; mkfifo " + JSON.stringify(root._fifoPath)]
+        command: ["sh", "-c", "rm -f \"$1\"; mkfifo \"$1\"", "_", root._fifoPath]
         running: true
         stdout: StdioCollector { onStreamFinished: root._reader.running = true }
     }
     readonly property Process _reader: Process {
         running: false
-        command: ["sh", "-c", "read -r _ < " + JSON.stringify(root._fifoPath)]
+        command: ["sh", "-c", "read -r _ < \"$1\"", "_", root._fifoPath]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.visible = !root.visible

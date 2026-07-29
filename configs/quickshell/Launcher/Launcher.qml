@@ -179,13 +179,43 @@ PanelWindow {
         resultsList.currentIndex = 0
     }
 
+    // Split a desktop Exec string into argv per the XDG spec: honour "…"/'…'
+    // quoting, drop field codes (%f %u …), strip flatpak forwarding wrappers.
+    function _parseExec(exec) {
+        const args = []
+        let cur = ""
+        let quote = ""
+        let has = false
+        for (let i = 0; i < exec.length; i++) {
+            const ch = exec[i]
+            if (quote) {
+                if (ch === quote) quote = ""
+                else if (ch === "\\" && quote === '"' && i + 1 < exec.length) { i++; cur += exec[i] }
+                else cur += ch
+            } else if (ch === '"' || ch === "'") {
+                quote = ch; has = true
+            } else if (ch === " " || ch === "\t") {
+                if (has) { args.push(cur); cur = ""; has = false }
+            } else {
+                cur += ch; has = true
+            }
+        }
+        if (has) args.push(cur)
+        return args.filter(a => {
+            if (a === "--file-forwarding") return false
+            if (/^%[uUfFdDnNickvm]$/.test(a)) return false  // bare field codes
+            return true
+        }).map(a => a.replace(/%[uUfFdDnNickvm]/g, "").replace(/%%/g, "%"))
+          .filter(a => a !== "")
+    }
+
     function launchItem(idx) {
         if (idx < 0 || idx >= combinedModel.count) return
         const item = combinedModel.get(idx)
 
         if (item.kind === "calc") {
-            // Copy result to clipboard
-            launchProc.command = ["setsid", "-f", "sh", "-c", "echo -n " + JSON.stringify(item.label.slice(2)) + " | wl-copy"]
+            // Copy result to clipboard - content via stdin, never in shell string
+            launchProc.command = ["setsid", "-f", "sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", item.label.slice(2)]
             launchProc.running = false; launchProc.running = true
             root.visible = false
             return
@@ -196,19 +226,16 @@ PanelWindow {
             usage[item.desktopId] = (usage[item.desktopId] || 0) + 1
             appUsage.usageData = JSON.stringify(usage)
 
-            const exec = item.exec
-                .replace(/--file-forwarding\s+/g, "")
-                .replace(/@@\w*\s[^@]*@@/g, "")
-                .replace(/%[uUfFdDnNickvm]/g, "")
-                .replace(/\s+--\s*$/g, "")
-                .replace(/\s+/g, " ")
-                .trim()
-            // setsid -f detaches into new session so SIGTERM on launchProc
-            //           doesn't propagate to flatpak run / long-lived wrappers (e.g. sober)
-            launchProc.command = ["setsid", "-f", "sh", "-c", exec]
-            launchProc.running = false; launchProc.running = true
+            // Parse the desktop Exec into an argv array (XDG spec quoting) - never
+            // through `sh -c`, so a crafted .desktop file can't inject shell.
+            const argv = root._parseExec(item.exec)
+            if (argv.length > 0) {
+                // setsid -f detaches so SIGTERM on launchProc doesn't reach the app
+                launchProc.command = ["setsid", "-f"].concat(argv)
+                launchProc.running = false; launchProc.running = true
+            }
         } else {
-            launchProc.command = ["setsid", "-f", "sh", "-c", "xdg-open " + JSON.stringify(item.filePath)]
+            launchProc.command = ["setsid", "-f", "xdg-open", item.filePath]
             launchProc.running = false; launchProc.running = true
         }
         root.visible = false

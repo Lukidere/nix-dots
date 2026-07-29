@@ -127,7 +127,7 @@ in
     enable = true;
     settings = {
       user.name = "dhmztr";
-      user.email = "koniecznyrad@gmail.com";
+      user.email = "117782259+dhmztr@users.noreply.github.com";
       pull.rebase = false;
       core.editor = "nvim";
       safe.directory = "/etc/nixos";

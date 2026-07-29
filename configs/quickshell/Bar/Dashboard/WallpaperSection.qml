@@ -63,23 +63,24 @@ Item {
         onTriggered: {
             const wallDir = root.wallpaperRoot
             const cacheDir = root.thumbnailCacheDir
+            // wallDir/cacheDir passed as $1/$2 - never concatenated into the script
             _cacheWarmProc.command = ["sh", "-c",
-                "mkdir -p " + cacheDir + " && " +
-                "find " + wallDir + " -maxdepth 3 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' \\) " +
-                "| while read img; do " +
-                "  rel_path=\"${img#" + wallDir + "/}\"; " +
-                "  cache_name=\"${rel_path//\\//_}\"; " +
-                "  cache_name=\"${cache_name%.*}.jpg\"; " +
-                "  cache_file=" + cacheDir + "/$cache_name; " +
-                "  [ -f \"$cache_file\" ] || ( " +
-                "    if [[ \"$img\" =~ \\.(gif|GIF)$ ]]; then " +
-                "      magick \"$img[0]\" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage \"$cache_file\" 2>/dev/null; " +
-                "    else " +
-                "      magick \"$img\" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage \"$cache_file\" 2>/dev/null; " +
-                "    fi " +
-                "  ); " +
-                "done"
-            ]
+                'mkdir -p "$2" && ' +
+                'find "$1" -maxdepth 3 -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \\) ' +
+                '| while read img; do ' +
+                '  rel_path="${img#"$1"/}"; ' +
+                '  cache_name="${rel_path//\\//_}"; ' +
+                '  cache_name="${cache_name%.*}.jpg"; ' +
+                '  cache_file="$2/$cache_name"; ' +
+                '  [ -f "$cache_file" ] || ( ' +
+                '    if [[ "$img" =~ \\.(gif|GIF)$ ]]; then ' +
+                '      magick "$img[0]" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage "$cache_file" 2>/dev/null; ' +
+                '    else ' +
+                '      magick "$img" -define jpeg:size=660x1080 -filter Triangle -strip -thumbnail 330x540^ -gravity center -extent 330x540 -quality 80 +repage "$cache_file" 2>/dev/null; ' +
+                '    fi ' +
+                '  ); ' +
+                'done',
+                "_", wallDir, cacheDir]
             _cacheWarmProc.running = false
             _cacheWarmProc.running = true
             this.running = false

@@ -101,13 +101,26 @@ Item {
             Column {
                 width: parent.width; spacing: 3
                 visible: yt.mpvDuration > 0
-                Rectangle {
-                    width: parent.width; height: 4; radius: 2
-                    color: Qt.lighter(Colors.background, 1.4)
+                Item {
+                    width: parent.width; height: 14
                     Rectangle {
-                        width: parent.width * Math.min(1, yt.mpvPosition / Math.max(1, yt.mpvDuration))
-                        height: 4; radius: 2; color: root.accent
-                        Behavior on width { NumberAnimation { duration: 500 } }
+                        id: barTrack
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width; height: 4; radius: 2
+                        color: Qt.lighter(Colors.background, 1.4)
+                        Rectangle {
+                            width: parent.width * Math.min(1, yt.mpvPosition / Math.max(1, yt.mpvDuration))
+                            height: 4; radius: 2; color: root.accent
+                            Behavior on width { NumberAnimation { duration: seekMa.pressed ? 0 : 500 } }
+                        }
+                    }
+                    MouseArea {
+                        id: seekMa
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        hoverEnabled: true
+                        onPressed: e => yt.seek(Math.max(0, Math.min(1, e.x / width)) * yt.mpvDuration)
+                        onPositionChanged: e => { if (pressed) yt.seek(Math.max(0, Math.min(1, e.x / width)) * yt.mpvDuration) }
                     }
                 }
                 Item {

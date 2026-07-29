@@ -73,12 +73,13 @@ Item {
 
     // Step 2: get weather
     readonly property Process _weatherProc: Process {
+        // lat/lon are QML reals, but pass as argv anyway so they can never
+        // escape the URL context even if the geo API returns something odd
         command: ["sh", "-c",
-            "curl -sf 'https://api.open-meteo.com/v1/forecast?latitude=" + root.lat +
-            "&longitude=" + root.lon +
+            "curl -sf \"https://api.open-meteo.com/v1/forecast?latitude=$1&longitude=$2" +
             "&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode" +
-            "&hourly=apparent_temperature&forecast_days=7" +
-            "&timezone=auto' 2>/dev/null"]
+            "&hourly=apparent_temperature&forecast_days=7&timezone=auto\" 2>/dev/null",
+            "_", String(root.lat), String(root.lon)]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

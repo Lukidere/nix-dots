@@ -71,6 +71,13 @@ def main():
 
     from ytmusicapi import YTMusic
 
+    # browser.json holds session cookies - never leave it world-readable
+    try:
+        os.chmod(os.path.dirname(AUTH), 0o700)
+        os.chmod(AUTH, 0o600)
+    except OSError:
+        pass
+
     yt = YTMusic(AUTH)
 
     if cmd == "search":
