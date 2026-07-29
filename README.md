@@ -3,7 +3,7 @@
 You really only need nixos with flakes enabled
 
 ### How to run it
-<code> sudo nixos-rebuild switch --flake github:Lukidere/nix-dots#legion </code>
+<code> sudo nixos-rebuild switch --flake github:dhmztr/nix-dots#legion </code>
 
 ### What does it contain
 
