@@ -22,7 +22,7 @@ You really only need nixos with flakes enabled
      - Connection info
      - Eye health toggle
      - Performance tab
-     - YouTube Music player (search, playlists, liked songs - headless mpv playback with premium quality streams)
+     - YouTube Music player (search, playlists, liked songs - headless mpv playback with premium quality streams, seekable progress bar)
      - Detailed calendar with weather
      - Pomodoro timer and todo list
      - Interactive wallpaper changer which uses wallust to change theme of most apps (cached thumbnails, instant browsing)
