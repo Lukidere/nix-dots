@@ -66,4 +66,28 @@ Item {
         interval: 30000; running: true; repeat: true
         onTriggered: { root.batProc.running = false; root.batProc.running = true }
     }
+
+    // ── Low-battery warnings (once per threshold crossing) ──────────
+    property bool _warnedLow:  false
+    property bool _warnedCrit: false
+    onPctChanged: {
+        const discharging = root.status !== "Charging" && root.status !== "Full"
+        if (!discharging) { root._warnedLow = false; root._warnedCrit = false; return }
+        if (pct <= 5 && !_warnedCrit) {
+            _warnedCrit = true
+            _notify.command = ["notify-send", "-u", "critical", "-i", "battery-caution",
+                "Battery critical", pct + "% - suspending soon"]
+            _notify.running = false; _notify.running = true
+            _suspend.running = false; _suspend.running = true
+        } else if (pct <= 15 && !_warnedLow) {
+            _warnedLow = true
+            _notify.command = ["notify-send", "-u", "critical", "-i", "battery-low",
+                "Battery low", pct + "% - plug in soon"]
+            _notify.running = false; _notify.running = true
+        }
+    }
+    Process { id: _notify;  running: false }
+    // 20s grace so the notification is seen; re-check status before sleeping
+    Process { id: _suspend; running: false
+        command: ["sh", "-c", "sleep 20; b=$(cat /sys/class/power_supply/BAT*/status | head -1); [ \"$b\" != Charging ] && systemctl suspend"] }
 }

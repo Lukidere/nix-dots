@@ -13,6 +13,7 @@ ClipboardHistory 1.0 ClipboardHistory.qml
 SystemInfo 1.0 SystemInfo.qml
 singleton YtMusicState 1.0 YtMusicState.qml
 singleton GmailState 1.0 GmailState.qml
+singleton ClipboardState 1.0 ClipboardState.qml
 MailSection 1.0 MailSection.qml
 PomodoroTimer 1.0 PomodoroTimer.qml
 TodoList 1.0 TodoList.qml

@@ -233,10 +233,18 @@ animations {
 }
 
 window-rule {
-    match app-id=r#"Bitwarden"#
-    match title=r#"Bitwarden"#
+    // desktop Bitwarden app + librewolf extension popup (title arrives after
+    // open, but app-id "librewolf" + the Extension title is enough to float it)
+    match app-id=r#"(?i)bitwarden"#
+    match app-id=r#"librewolf"# title=r#"(?i)bitwarden"#
+    match app-id=r#"librewolf"# title=r#"Extension:"#
+    // niri open-floating only fires at map time; the librewolf extension popup
+    // maps with an empty title so it can't be auto-floated. The size clamp still
+    // applies dynamically → press MOD+T to float it (centered at 420x640).
     open-floating true
+    min-width 420
     max-width 420
+    min-height 640
     max-height 640
 }
 
@@ -245,6 +253,7 @@ window-rule {
     match app-id=r#"vesktop"#
     match app-id=r#"obsidian$"#
     exclude title=r#"Bitwarden"#
+    exclude title=r#"Extension:"#
     open-maximized true
 }
 

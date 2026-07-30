@@ -54,7 +54,6 @@ in
     librewolf
     vesktop
     zathura
-
   ];
   home.stateVersion = "25.11";
 
@@ -105,6 +104,7 @@ in
     source = ./configs/scripts;
     recursive = true;
   };
+  xdg.configFile."fastfetch/config.jsonc".source = ./configs/fastfetch/config.jsonc;
   # home.file.".config/quickshell" = {
   #   source = ./configs/quickshell;
   #   recursive = true;

@@ -37,6 +37,8 @@ in
       dates = "weekly";
       options = "--delete-older-than 7d";
     };
+    # dedup identical store files via hardlinks - shrinks /nix/store
+    optimise.automatic = true;
   };
 
   security = {
@@ -218,6 +220,26 @@ in
   # ==========================================
   services.dbus.enable = true;
   services.printing.enable = true;
+
+  # Local restic backup of /home → /var/backup (protects against rm -rf, not
+  # disk failure). Point repository at an external/remote path for real safety.
+  # Password lives in an agenix secret; init once: `sudo restic init -r /var/backup/restic`.
+  services.restic.backups.home = {
+    initialize = true;
+    repository = "/var/backup/restic";
+    passwordFile = "/etc/restic-pw";  # plain file, chmod 600 (not in repo)
+    paths = [ "/home/dhm" ];
+    exclude = [
+      "/home/dhm/.cache"
+      "/home/dhm/.local/share/Trash"
+      "/home/dhm/**/node_modules"
+      "/home/dhm/**/target"
+      "/home/dhm/**/.git"
+      "/home/dhm/dotsy/configs/wallpapers"
+    ];
+    timerConfig = { OnCalendar = "daily"; Persistent = true; };
+    pruneOpts = [ "--keep-daily 7" "--keep-weekly 4" "--keep-monthly 6" ];
+  };
   services.tailscale.enable = true;
   services.flatpak.enable = true;
   services.geoclue2.enable = true;

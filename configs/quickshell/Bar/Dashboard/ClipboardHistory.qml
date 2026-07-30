@@ -1,54 +1,11 @@
 import QtQuick
-import Quickshell.Io
 import "../../Theme"
 
+// Thin view over the shared ClipboardState singleton.
 Item {
     id: root
     width: parent.width; height: parent.height
-
-    property var entries: []
-    property string _lastClip: ""
-
-    // Watch clipboard via wl-paste (works on Wayland without focus)
-    // event-driven only - restart if watcher dies via backoff timer
-    Timer {
-        id: clipRestartTimer
-        interval: 2000; repeat: false
-        onTriggered: clipWatcher.running = true
-    }
-
-    // watcher only signals "clipboard changed" (one line per event);
-    // content is fetched by a one-shot read so multi-line entries survive
-    Process {
-        id: clipWatcher
-        command: ["wl-paste", "--watch", "echo"]
-        running: true
-        onRunningChanged: if (!running) clipRestartTimer.start()
-        stdout: SplitParser {
-            onRead: { _clipRead.running = false; _clipRead.running = true }
-        }
-    }
-    Process {
-        id: _clipRead
-        command: ["wl-paste", "--no-newline"]
-        running: false
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const clip = this.text.trim()
-                if (clip !== "" && clip !== root._lastClip) {
-                    root._lastClip = clip
-                    const entry = {
-                        text: clip,
-                        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
-                    }
-                    let filtered = root.entries.filter(e => e.text !== clip)
-                    root.entries = [entry].concat(filtered).slice(0, 50)
-                }
-            }
-        }
-    }
-
-    Process { id: _clipCopy; running: false }
+    readonly property var entries: ClipboardState.entries
 
     // Header
     Item {
@@ -72,7 +29,7 @@ Item {
                 MouseArea {
                     id: clipClearMa; anchors.fill: parent; anchors.margins: -2
                     hoverEnabled: true
-                    onClicked: root.entries = []
+                    onClicked: ClipboardState.clear()
                 }
             }
         }
@@ -124,11 +81,7 @@ Item {
                     }
                     MouseArea {
                         id: clipMa; anchors.fill: parent; hoverEnabled: true
-                        onClicked: {
-                            root._lastClip = entry.text
-                            _clipCopy.command = ["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", entry.text]
-                            _clipCopy.running = false; _clipCopy.running = true
-                        }
+                        onClicked: ClipboardState.copy(entry.text)
                     }
                 }
             }
