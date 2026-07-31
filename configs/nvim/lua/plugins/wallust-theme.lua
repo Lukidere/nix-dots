@@ -1,12 +1,12 @@
 return {
-  -- 1. Instalujemy wtyczkę neopywal
+  -- 1. install the neopywal plugin
   {
     "RedsXDD/neopywal.nvim",
     name = "neopywal",
-    lazy = false, -- Motyw musi załadować się natychmiast przy starcie
-    priority = 1000, -- Bardzo wysoki priorytet, aby załadował się przed UI
+    lazy = false, -- theme must load immediately at startup
+    priority = 1000, -- very high priority so it loads before the UI
     opts = {
-      -- Opcjonalnie: przezroczyste tło (true), jeśli używasz przezroczystości w terminalu
+      -- optional: transparent background (true) if the terminal is transparent
       transparent_background = false,
     },
     config = function(_, opts)
@@ -33,7 +33,7 @@ return {
     end,
   },
 
-  -- 2. Informujemy AstroNvim, żeby użył tego motywu jako domyślnego
+  -- 2. tell AstroNvim to use this theme as the default
   {
     "AstroNvim/astroui",
     ---@type AstroUIOpts

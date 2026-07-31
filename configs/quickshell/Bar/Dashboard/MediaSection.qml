@@ -134,23 +134,33 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 6
                 Repeater {
-                    model: 4
+                    // 0 prev - 1 play/pause - 2 next - 3 loop - 4 stop
+                    model: 5
                     delegate: Rectangle {
                         required property int index
+                        readonly property bool _loopOn: index === 3 && yt.loopMode !== "None"
                         width: index === 1 ? 44 : 34
                         height: index === 1 ? 44 : 34
                         radius: index === 1 ? 22 : 17
                         color: index === 1
                             ? (ytCtlMa.containsMouse ? Qt.lighter(root.accent, 1.15) : root.accent)
+                            : _loopOn ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.25)
                             : (ytCtlMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25))
                         Behavior on color { ColorAnimation { duration: 100 } }
                         anchors.verticalCenter: parent.verticalCenter
                         Text {
                             anchors.centerIn: parent
-                            text: index === 0 ? "\uF048" : index === 1 ? (yt.mpvStatus === "Playing" ? "\uF04C" : "\uF04B") : index === 2 ? "\uF051" : "\uF04D"
+                            text: index === 0 ? "" : index === 1 ? (yt.mpvStatus === "Playing" ? "" : "") : index === 2 ? "" : index === 3 ? "" : ""
                             font.family: "Iosevka Nerd Font"
                             font.pixelSize: index === 1 ? 15 : 12
-                            color: index === 1 ? Colors.background : Colors.foreground
+                            color: index === 1 ? Colors.background
+                                 : parent._loopOn ? root.accent : Colors.foreground
+                        }
+                        Text {
+                            visible: index === 3 && yt.loopMode === "Track"
+                            anchors { right: parent.right; top: parent.top; rightMargin: 5; topMargin: 3 }
+                            text: "1"; font.family: "Iosevka Nerd Font"; font.pixelSize: 7; font.bold: true
+                            color: root.accent
                         }
                         MouseArea {
                             id: ytCtlMa; anchors.fill: parent; hoverEnabled: true
@@ -158,6 +168,7 @@ Item {
                                 if (index === 0) yt.previous()
                                 else if (index === 1) yt.playPause()
                                 else if (index === 2) yt.next()
+                                else if (index === 3) yt.cycleLoop()
                                 else yt.stop()
                             }
                         }

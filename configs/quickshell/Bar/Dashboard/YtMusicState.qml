@@ -67,6 +67,15 @@ Item {
         else _ctl(["playerctl", "-p", "mpv", "previous"])
     }
     function seek(sec)   { root.mpvPosition = sec; _ctl(["playerctl", "-p", "mpv", "position", String(Math.max(0, Math.round(sec)))]) }
+
+    // Loop: None -> Track -> Playlist -> None
+    property string loopMode: "None"
+    function cycleLoop() {
+        root.loopMode = root.loopMode === "None" ? "Track"
+                      : root.loopMode === "Track" ? "Playlist" : "None"
+        _ctl(["playerctl", "-p", "mpv", "loop", root.loopMode])
+    }
+
     function _ctl(cmd) { _ctlProc.running = false; _ctlProc.command = cmd; _ctlProc.running = true }
     readonly property Process _ctlProc: Process {}
 

@@ -68,11 +68,11 @@ bind '$' __history_previous_command_arguments
 ##################
 # Better history
 function fish_user_key_bindings
-    # Skróty dla trybu INSERT (kiedy normalnie piszesz tekst)
+    # INSERT-mode shortcuts (while typing text)
     bind -M insert ! __history_previous_command
     bind -M insert '$' __history_previous_command_arguments
 
-    # Skróty dla trybu DEFAULT (tryb komend, po wciśnięciu ESC)
+    # DEFAULT-mode shortcuts (command mode, after ESC)
     # Znak $ przenosi kursor na sam koniec linijki
     bind -M default '$' end-of-line
 end

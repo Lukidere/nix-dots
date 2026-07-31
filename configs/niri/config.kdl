@@ -14,13 +14,13 @@ screenshot-path "~/Pictures/Screenshots/%Y-%m-%d %H-%M-%S.png"
 
 // Monitor Setup - External monitor on the RIGHT
 output "HDMI-A-1" {
-    mode "1920x1080@60.000" // Możesz zmienić na 240 jeśli Twój ekran to obsługuje, np. "1920x1080@240.000"
+    mode "1920x1080@60.000" // change to 240 if your screen supports it, e.g. "1920x1080@240.000"
     position x=0 y=0
     scale 1
 }
 
 output "eDP-2" {
-    // W Waylandzie to zwykle HDMI-A-1. Jeśli nie działa, sprawdź `niri msg outputs`
+    // usually HDMI-A-1 under Wayland; if it does not work, check `niri msg outputs`
    mode "2560x1600@240.000"
     position x=1920 y=0
 }
