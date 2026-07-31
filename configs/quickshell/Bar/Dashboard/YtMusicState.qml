@@ -61,7 +61,11 @@ Item {
 
     function playPause() { _ctl(["playerctl", "-p", "mpv", "play-pause"]) }
     function next()      { _ctl(["playerctl", "-p", "mpv", "next"]) }
-    function previous()  { _ctl(["playerctl", "-p", "mpv", "previous"]) }
+    // >10s into the track → restart it; otherwise jump to the previous track
+    function previous() {
+        if (root.mpvPosition > 10) seek(0)
+        else _ctl(["playerctl", "-p", "mpv", "previous"])
+    }
     function seek(sec)   { root.mpvPosition = sec; _ctl(["playerctl", "-p", "mpv", "position", String(Math.max(0, Math.round(sec)))]) }
     function _ctl(cmd) { _ctlProc.running = false; _ctlProc.command = cmd; _ctlProc.running = true }
     readonly property Process _ctlProc: Process {}

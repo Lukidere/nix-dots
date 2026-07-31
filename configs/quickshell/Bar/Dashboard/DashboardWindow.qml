@@ -8,7 +8,9 @@ PanelWindow {
     required property var modelData
     screen: modelData
     property bool _shouldShow: DashboardState.activeScreenName === root.modelData.name || DashboardState.volPanelScreen === root.modelData.name
-    visible: _shouldShow || panel.opacity > 0 || volPanelRect.opacity > 0
+    // stay mapped so the heavy panel content isn't rebuilt on every hover
+    // (mask limits input to the hover strips; opacity 0 draws nothing when closed)
+    visible: true
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
@@ -276,9 +278,9 @@ PanelWindow {
             border.width: 1
             opacity: DashboardState.activeScreenName === root.modelData.name ? 1 : 0
             visible: opacity > 0
-            // snappier entrance - 120/140 vs 180/200
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-            Behavior on y       { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            // snappier entrance
+            Behavior on opacity { NumberAnimation { duration: 60 } }
+            Behavior on y       { NumberAnimation { duration: 70; easing.type: Easing.OutCubic } }
 
             property int activeTab: 0
             // per-tab accent - sweeps across panel on tab switch

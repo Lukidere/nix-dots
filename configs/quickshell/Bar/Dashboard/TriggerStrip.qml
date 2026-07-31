@@ -9,11 +9,7 @@ PanelWindow {
     property bool isRight:  false
     screen: modelData
     color: "transparent"
-    // volume strip only on the desktop's true right edge - on inner monitor
-    // boundaries it fires while crossing screens and steals the dashboard
-    readonly property bool _atRightEdge: !Quickshell.screens.some(o =>
-        o.name !== root.modelData.name && o.x >= root.modelData.x + root.modelData.width)
-    visible: !root.isRight || _atRightEdge
+    visible: true
     anchors {
         // right strip spans top+bottom; H strips span left+right
         top:    !root.isBottom
