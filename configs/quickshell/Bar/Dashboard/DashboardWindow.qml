@@ -14,7 +14,7 @@ PanelWindow {
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: (panel.activeTab === 1 || panel.activeTab === 5) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: panel.activeTab === 1 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
     // mask limits input to hover/panel rects - rest of screen click-through
     mask: Region {
@@ -390,7 +390,7 @@ PanelWindow {
                     leftMargin: Space.sm; topMargin: Space.md; bottomMargin: Space.md
                 }
                 width: 56
-                readonly property int slotH: Math.floor(height / 7)
+                readonly property int slotH: Math.floor(height / 6)
 
                 // Animated active indicator
                 Rectangle {
@@ -403,7 +403,7 @@ PanelWindow {
                 }
 
                 Repeater {
-                    model: 7
+                    model: 6
                     delegate: Item {
                         id: railSlot
                         required property int index
@@ -429,10 +429,10 @@ PanelWindow {
                             Behavior on color { ColorAnimation { duration: Space.med } }
                         }
                         Rectangle {
-                            visible: railSlot.index === 6 && GmailState.unreadCount > 0
+                            visible: railSlot.index === 5 && GmailState.unreadCount > 0
                             anchors { top: parent.top; right: parent.right; topMargin: 8; rightMargin: 8 }
                             width: Math.max(14, badgeCount.implicitWidth + 6); height: 14; radius: 7
-                            color: Tab.accent(6)
+                            color: Tab.accent(5)
                             Text {
                                 id: badgeCount
                                 anchors.centerIn: parent
@@ -446,7 +446,7 @@ PanelWindow {
                             anchors.fill: parent; hoverEnabled: true
                             onClicked: {
                                 panel.activeTab = railSlot.index
-                                if (railSlot.index === 6) GmailState.refresh()
+                                if (railSlot.index === 5) GmailState.refresh()
                             }
                         }
                     }
@@ -462,6 +462,12 @@ PanelWindow {
                     topMargin: Space.md + Space.sm; bottomMargin: Space.md
                 }
                 clip: true
+
+                // Warm the lazy tabs in the background (staggered) so the first
+                // visit to a heavy tab is instant instead of building on open.
+                Timer { interval: 1200; running: true; onTriggered: tab2._loaded = true }
+                Timer { interval: 2000; running: true; onTriggered: tab4._loaded = true }
+                Timer { interval: 2800; running: true; onTriggered: tab5._loaded = true }
 
                 // Tab 0 - Controls
                 Item {
@@ -579,7 +585,7 @@ PanelWindow {
                     }
                 }
 
-                // Tab 5 - Pomodoro + Tasks (lazy-loaded)
+                // Tab 5 - Mail (lazy-loaded)
                 Item {
                     id: tab5
                     anchors.fill: parent
@@ -593,52 +599,12 @@ PanelWindow {
                         anchors.fill: parent
                         active: tab5._loaded
                         sourceComponent: Component {
-                            Row {
-                                spacing: Space.md
-                                Column {
-                                    width: Math.round((tab5.width - Space.md) * 0.46); height: tab5.height
-                                    spacing: Space.sm
-                                    SectionHead { label: "POMODORO"; ico: ""; accent: panel.accent }
-                                    PomodoroTimer { width: parent.width }
-                                }
-                                Column {
-                                    width: tab5.width - Math.round((tab5.width - Space.md) * 0.46) - Space.md; height: tab5.height
-                                    spacing: Space.sm
-                                    SectionHead { label: "TASKS"; ico: ""; accent: panel.accent }
-                                    Flickable {
-                                        width: parent.width; height: parent.height - 36 - Space.sm
-                                        contentHeight: todoCol.implicitHeight; clip: true
-                                        boundsBehavior: Flickable.StopAtBounds
-                                        Column { id: todoCol; width: parent.width
-                                            TodoList { width: parent.width }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Tab 6 - Mail (lazy-loaded)
-                Item {
-                    id: tab6
-                    anchors.fill: parent
-                    opacity: panel.activeTab === 6 ? 1 : 0
-                    visible: opacity > 0
-                    clip: true
-                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
-                    property bool _loaded: false
-                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
-                    Loader {
-                        anchors.fill: parent
-                        active: tab6._loaded
-                        sourceComponent: Component {
                             Column {
                                 spacing: Space.sm
                                 SectionHead { label: "MAIL"; ico: "\uF0E0"; accent: panel.accent }
                                 MailSection {
-                                    width: tab6.width
-                                    height: tab6.height - 36 - Space.sm
+                                    width: tab5.width
+                                    height: tab5.height - 36 - Space.sm
                                     accent: panel.accent
                                 }
                             }
