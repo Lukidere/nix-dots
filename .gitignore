@@ -9,3 +9,10 @@ id_ed25519*
 cookies.txt
 browser.json
 *_history
+
+# never commit browser/app profile data
+configs/librewolf/
+configs/BraveSoftware/
+configs/vesktop/sessionData/
+configs/libreoffice/
+.config/
