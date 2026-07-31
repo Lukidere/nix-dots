@@ -104,6 +104,12 @@ in
     source = ./configs/scripts;
     recursive = true;
   };
+  # wallpapers ship in the repo so a fresh install has them; the switcher reads
+  # ~/.config/wallpapers, so deploy them there
+  xdg.configFile."wallpapers" = {
+    source = ./configs/wallpapers;
+    recursive = true;
+  };
   xdg.configFile."fastfetch/config.jsonc".source = ./configs/fastfetch/config.jsonc;
   # home.file.".config/quickshell" = {
   #   source = ./configs/quickshell;
