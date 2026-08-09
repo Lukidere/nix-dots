@@ -28,6 +28,7 @@ in
 {
   home.packages = with pkgs; [
     #---- CLI ----#
+    dust
     glow
     bottom
     curl
@@ -42,6 +43,7 @@ in
     wget
     gh
     zoxide
+    atuin
     #---- SHELL ----#
     ranger
     fish
@@ -205,6 +207,31 @@ in
     };
     Install = {
       WantedBy = [ "graphical-session.target" ];
+    };
+  };
+
+  # EasyEffects: autostart in the background with RNNoise denoise on the mic.
+  # The HM `extraPresets` option did not actually write the preset file, so the
+  # preset ships as a plain file and a oneshot loads it after the service is up.
+  services.easyeffects.enable = true;
+  xdg.configFile."easyeffects/input/denoise.json".source =
+    ./configs/easyeffects/input/denoise.json;
+
+  # Load the denoise preset into the running EasyEffects instance on login.
+  systemd.user.services.easyeffects-denoise = {
+    Unit = {
+      Description = "Load EasyEffects denoise preset";
+      After = [ "easyeffects.service" ];
+      Requires = [ "easyeffects.service" ];
+      PartOf = [ "easyeffects.service" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
+      ExecStart = "${pkgs.easyeffects}/bin/easyeffects -l denoise";
+    };
+    Install = {
+      WantedBy = [ "easyeffects.service" ];
     };
   };
 

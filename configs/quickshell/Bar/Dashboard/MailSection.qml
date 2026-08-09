@@ -73,14 +73,16 @@ Item {
                                 text: modelData.subject
                                 font.family: "Iosevka Nerd Font"; font.pixelSize: 11
                                 font.bold: modelData.unread
-                                color: Colors.foreground; elide: Text.ElideRight
+                                color: Colors.foreground
+                                elide: Text.ElideRight; wrapMode: Text.NoWrap; maximumLineCount: 1
                             }
                             Text {
                                 width: parent.width
                                 text: modelData.from
                                 font.family: "Iosevka Nerd Font"; font.pixelSize: 9
                                 font.bold: modelData.unread
-                                color: Colors.color8; elide: Text.ElideRight
+                                color: Colors.color8
+                                elide: Text.ElideRight; wrapMode: Text.NoWrap; maximumLineCount: 1
                             }
                         }
                         Text {

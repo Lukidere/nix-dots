@@ -184,6 +184,8 @@ alias shutdown='systemctl poweroff'
 alias du='dust'
 zoxide init fish | source
 alias cd='z'
+# atuin: SQLite shell history with fuzzy Ctrl-R search
+atuin init fish | source
 
 ###################
 ### Environment ###

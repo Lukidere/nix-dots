@@ -16,3 +16,7 @@ configs/BraveSoftware/
 configs/vesktop/sessionData/
 configs/libreoffice/
 .config/
+
+# python bytecode
+__pycache__/
+*.pyc

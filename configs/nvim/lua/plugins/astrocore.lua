@@ -47,6 +47,12 @@ return {
           end,
           desc = "Close buffer from tabline",
         },
+        -- force-close the current buffer (prevents <Space>bD falling through to
+        -- the `b` + `D` motions, which used to delete to end of line)
+        ["<Leader>bD"] = {
+          function() require("astrocore.buffer").close(0, true) end,
+          desc = "Force close buffer",
+        },
         ["<Leader>w"] = { "<Cmd>w<CR>", desc = "Save file" },
         ["<Leader>uI"] = {
           function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end,

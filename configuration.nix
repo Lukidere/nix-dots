@@ -317,6 +317,8 @@ in
     fd
     bluez
     hyprpicker
+    fuzzel # dmenu-style picker (backend for bemoji)
+    bemoji # emoji/glyph picker, copies to clipboard
     brightnessctl
     networkmanagerapplet
     qt6.qtwayland
@@ -356,6 +358,7 @@ in
     nixd
     pyright
     bash-language-server
+    clang-tools
     typescript-language-server
     lua-language-server
     ruff

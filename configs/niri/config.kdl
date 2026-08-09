@@ -122,24 +122,24 @@ binds {
 
     // ── Workspaces ───────────────────────────────────────────────────
     MOD+ESCAPE       hotkey-overlay-title="Overview"          repeat=false    { toggle-overview; }
-    MOD+1            hotkey-overlay-title="Workspace 1"                       { focus-workspace 1; }
-    MOD+2            hotkey-overlay-title="Workspace 2"                       { focus-workspace 2; }
-    MOD+3            hotkey-overlay-title="Workspace 3"                       { focus-workspace 3; }
-    MOD+4            hotkey-overlay-title="Workspace 4"                       { focus-workspace 4; }
-    MOD+5            hotkey-overlay-title="Workspace 5"                       { focus-workspace 5; }
-    MOD+6            hotkey-overlay-title="Workspace 6"                       { focus-workspace 6; }
-    MOD+7            hotkey-overlay-title="Workspace 7"                       { focus-workspace 7; }
-    MOD+8            hotkey-overlay-title="Workspace 8"                       { focus-workspace 8; }
-    MOD+9            hotkey-overlay-title="Workspace 9"                       { focus-workspace 9; }
-    MOD+SHIFT+1      hotkey-overlay-title="Move to workspace 1"               { move-column-to-workspace 1; }
-    MOD+SHIFT+2      hotkey-overlay-title="Move to workspace 2"               { move-column-to-workspace 2; }
-    MOD+SHIFT+3      hotkey-overlay-title="Move to workspace 3"               { move-column-to-workspace 3; }
-    MOD+SHIFT+4      hotkey-overlay-title="Move to workspace 4"               { move-column-to-workspace 4; }
-    MOD+SHIFT+5      hotkey-overlay-title="Move to workspace 5"               { move-column-to-workspace 5; }
-    MOD+SHIFT+6      hotkey-overlay-title="Move to workspace 6"               { move-column-to-workspace 6; }
-    MOD+SHIFT+7      hotkey-overlay-title="Move to workspace 7"               { move-column-to-workspace 7; }
-    MOD+SHIFT+8      hotkey-overlay-title="Move to workspace 8"               { move-column-to-workspace 8; }
-    MOD+SHIFT+9      hotkey-overlay-title="Move to workspace 9"               { move-column-to-workspace 9; }
+    MOD+1            hotkey-overlay-title=null                                   { focus-workspace 1; }
+    MOD+2            hotkey-overlay-title=null                                   { focus-workspace 2; }
+    MOD+3            hotkey-overlay-title=null                                   { focus-workspace 3; }
+    MOD+4            hotkey-overlay-title=null                                   { focus-workspace 4; }
+    MOD+5            hotkey-overlay-title=null                                   { focus-workspace 5; }
+    MOD+6            hotkey-overlay-title=null                                   { focus-workspace 6; }
+    MOD+7            hotkey-overlay-title=null                                   { focus-workspace 7; }
+    MOD+8            hotkey-overlay-title=null                                   { focus-workspace 8; }
+    MOD+9            hotkey-overlay-title=null                                   { focus-workspace 9; }
+    MOD+SHIFT+1      hotkey-overlay-title=null                           { move-column-to-workspace 1; }
+    MOD+SHIFT+2      hotkey-overlay-title=null                           { move-column-to-workspace 2; }
+    MOD+SHIFT+3      hotkey-overlay-title=null                           { move-column-to-workspace 3; }
+    MOD+SHIFT+4      hotkey-overlay-title=null                           { move-column-to-workspace 4; }
+    MOD+SHIFT+5      hotkey-overlay-title=null                           { move-column-to-workspace 5; }
+    MOD+SHIFT+6      hotkey-overlay-title=null                           { move-column-to-workspace 6; }
+    MOD+SHIFT+7      hotkey-overlay-title=null                           { move-column-to-workspace 7; }
+    MOD+SHIFT+8      hotkey-overlay-title=null                           { move-column-to-workspace 8; }
+    MOD+SHIFT+9      hotkey-overlay-title=null                           { move-column-to-workspace 9; }
 
     MOD+WHEELSCROLLDOWN              cooldown-ms=100 { focus-workspace-down; }
     MOD+WHEELSCROLLUP                cooldown-ms=100 { focus-workspace-up; }
@@ -169,7 +169,8 @@ binds {
     // ── Screenshot & tools ───────────────────────────────────────────
     MOD+SHIFT+S      hotkey-overlay-title="Screenshot region"                 { screenshot; }
     MOD+CTRL+S       hotkey-overlay-title="Screenshot window"                 { screenshot-window write-to-disk=true; }
-    MOD+P            hotkey-overlay-title="Color picker"                      { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker"; }
+    MOD+P            hotkey-overlay-title="Color picker"                      { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker -a"; }
+    MOD+Period       hotkey-overlay-title="Emoji picker"                      { spawn-sh "bemoji -n"; }
 }
 
 

@@ -18,8 +18,8 @@ PanelWindow {
         right:  true
     }
     // wider hit zone - easier mouse capture
-    implicitHeight: root.isRight ? 0 : 10
-    implicitWidth:  root.isRight ? 12 : 0
+    implicitHeight: root.isRight ? 0 : 4
+    implicitWidth:  root.isRight ? 3 : 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
@@ -35,11 +35,13 @@ PanelWindow {
         height: root.isRight ? hitH : parent.height
         // hit zone matches panel size (DashboardWindow panelW formula + volPanelRect height)
         readonly property int hitW: Math.min(680, Math.max(560, Math.round(parent.width * 0.34)))
-        readonly property int hitH: 380
+        // right strip: small centered target, not the full panel height - must aim
+        readonly property int hitH: 120
 
         Timer {
-            // 40ms feels instant without misfiring on edge skim
-            id: _showDelay; interval: 40
+            // long dwell so a quick pass to the right edge does not open the
+            // volume/brightness panel - the cursor must rest at the edge
+            id: _showDelay; interval: 300
             onTriggered: DashboardState.showVolPanel(root.modelData.name)
         }
         MouseArea {

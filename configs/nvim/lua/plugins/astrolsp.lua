@@ -30,6 +30,7 @@ return {
       "ts_ls",
       "lua_ls",
       "qmlls",
+      "clangd",
     },
     config = {
       rust_analyzer = {
@@ -61,6 +62,7 @@ return {
       pyright = { cmd = { "pyright-langserver", "--stdio" } },
       ts_ls = { cmd = { "typescript-language-server", "--stdio" } },
       qmlls = { cmd = { "qmlls", "-E" } },
+      clangd = { cmd = { "clangd" } },
     },
     handlers = {
       rnix = false, -- disabled: using nixd instead (astrocommunity.pack.nix enables rnix by default)

@@ -56,4 +56,6 @@ neopywal = { src = 'neopywal.vim', dst = '~/.cache/wal/colors-wal.vim' }
 
 zathurarc = { src = 'zathurarc', dst = '~/.config/zathura/zathurarc' }
 
+fuzzel = { template = "fuzzel.ini", target = "~/.config/fuzzel/fuzzel.ini" }
+
 

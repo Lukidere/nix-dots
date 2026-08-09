@@ -390,7 +390,7 @@ PanelWindow {
                     leftMargin: Space.sm; topMargin: Space.md; bottomMargin: Space.md
                 }
                 width: 56
-                readonly property int slotH: Math.floor(height / 6)
+                readonly property int slotH: Math.floor(height / 7)
 
                 // Animated active indicator
                 Rectangle {
@@ -403,7 +403,7 @@ PanelWindow {
                 }
 
                 Repeater {
-                    model: 6
+                    model: 7
                     delegate: Item {
                         id: railSlot
                         required property int index
@@ -468,6 +468,7 @@ PanelWindow {
                 Timer { interval: 1200; running: true; onTriggered: tab2._loaded = true }
                 Timer { interval: 2000; running: true; onTriggered: tab4._loaded = true }
                 Timer { interval: 2800; running: true; onTriggered: tab5._loaded = true }
+                Timer { interval: 3600; running: true; onTriggered: tab6._loaded = true }
 
                 // Tab 0 - Controls
                 Item {
@@ -605,6 +606,33 @@ PanelWindow {
                                 MailSection {
                                     width: tab5.width
                                     height: tab5.height - 36 - Space.sm
+                                    accent: panel.accent
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Tab 6 - News / RSS (lazy-loaded)
+                Item {
+                    id: tab6
+                    anchors.fill: parent
+                    opacity: panel.activeTab === 6 ? 1 : 0
+                    visible: opacity > 0
+                    clip: true
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
+                        anchors.fill: parent
+                        active: tab6._loaded
+                        sourceComponent: Component {
+                            Column {
+                                spacing: Space.sm
+                                SectionHead { label: "NEWS"; ico: ""; accent: panel.accent }
+                                RssSection {
+                                    width: tab6.width
+                                    height: tab6.height - 36 - Space.sm
                                     accent: panel.accent
                                 }
                             }
