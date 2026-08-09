@@ -28,13 +28,17 @@ You really only need nixos with flakes enabled
      - Interactive wallpaper changer which uses wallust to change theme of most apps (cached thumbnails, instant browsing)
      - Notification and clipboard center
      - Gmail inbox tab (unread badge, opening a mail marks it read via IMAP, simplified body view)
+     - News tab: merged RSS/Atom feed reader (configurable feeds, click opens in browser)
      - detailed internet/bluetooth control panel with info about the system
 - App launcher with subsections and a calculator
 - File manager (trash-safe delete, sorting, keyboard navigation, open-terminal-here)
+- Emoji picker (bemoji + themed fuzzel, copies to clipboard) and color picker (hyprpicker, copies hex)
+- Mic noise suppression via EasyEffects (RNNoise), auto-loaded on login
 - Themed login (regreet) matching the gtklock lock screen
 - Silent boot with plymouth splash
 - Notifications with popups and OSD for volume/brightness
-- AstroNvim setup with nix-provided LSPs (rust, python, nix, bash, ts, lua, haskell, qml)
+- Fish shell with atuin (fuzzy history), zoxide and starship
+- AstroNvim setup with nix-provided LSPs (rust, python, nix, bash, ts, lua, haskell, qml, c)
 
 ### Gmail tab setup
 The mail tab reads your inbox over IMAP with a Google app password (never commit it):
@@ -42,6 +46,11 @@ The mail tab reads your inbox over IMAP with a Google app password (never commit
 2. Generate one for "Mail"
 3. <code>mkdir -p ~/.config/qs-gmail && echo "you@gmail.com:your-app-password" > ~/.config/qs-gmail/credentials && chmod 600 ~/.config/qs-gmail/credentials</code>
 4. Open the mail tab → Re-check
+
+### News (RSS) setup
+The news tab ships with sensible defaults (Hacker News, Phoronix, LWN). To customize, edit the auto-created feed list (one URL per line, `#` for comments):
+<code>$EDITOR ~/.config/qs-rss/feeds</code>
+Most sites expose a feed at <code>/rss</code>, <code>/feed</code> or <code>/atom.xml</code>; Reddit is <code>/r/NAME/.rss</code>, a YouTube channel is <code>/feeds/videos.xml?channel_id=ID</code>.
 
 ### YouTube Music setup
 1. <code>ytmusicapi browser</code> - paste request headers from an authenticated music.youtube.com tab (copy them from a POST /youtubei/v1/browse request in devtools)

@@ -24,7 +24,6 @@ DEFAULTS = [
     "https://news.ycombinator.com/rss",
     "https://www.phoronix.com/rss.php",
     "https://lwn.net/headlines/newrss",
-    "https://www.reddit.com/r/unixporn/.rss",
 ]
 
 
