@@ -42,13 +42,25 @@ Item {
         }
 
         Flickable {
+            id: listFlick
             width: parent.width
             height: parent.height - 30
             contentHeight: mailCol.implicitHeight; clip: true
             boundsBehavior: Flickable.StopAtBounds
 
+            // thin scrollbar indicator (plain QtQuick, no Controls dep)
+            Rectangle {
+                z: 2
+                width: 4; radius: 2
+                visible: listFlick.contentHeight > listFlick.height
+                color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.6)
+                x: listFlick.contentX + listFlick.width - width
+                height: listFlick.height * listFlick.visibleArea.heightRatio
+                y: listFlick.contentY + listFlick.visibleArea.yPosition * listFlick.height
+            }
+
             Column {
-                id: mailCol; width: parent.width; spacing: 2
+                id: mailCol; width: parent.width - 8; spacing: 2
 
                 Repeater {
                     model: gm.mails
@@ -145,14 +157,26 @@ Item {
         Rectangle { width: parent.width; height: 1; color: Qt.lighter(Colors.background, 1.4) }
 
         Flickable {
+            id: bodyFlick
             width: parent.width
             height: parent.height - 90
             contentHeight: bodyText.implicitHeight + 8; clip: true
             boundsBehavior: Flickable.StopAtBounds
 
+            // thin scrollbar indicator (plain QtQuick, no Controls dep)
+            Rectangle {
+                z: 2
+                width: 4; radius: 2
+                visible: bodyFlick.contentHeight > bodyFlick.height
+                color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.6)
+                x: bodyFlick.contentX + bodyFlick.width - width
+                height: bodyFlick.height * bodyFlick.visibleArea.heightRatio
+                y: bodyFlick.contentY + bodyFlick.visibleArea.yPosition * bodyFlick.height
+            }
+
             Text {
                 id: bodyText
-                width: parent.width
+                width: parent.width - 8
                 text: gm.readBody !== "" ? gm.readBody : (gm.loading ? "Loading…" : "")
                 font.family: "Iosevka Nerd Font"; font.pixelSize: 11
                 color: Colors.foreground

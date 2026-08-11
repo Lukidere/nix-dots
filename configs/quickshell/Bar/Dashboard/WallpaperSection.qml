@@ -87,9 +87,10 @@ Item {
         }
     }
 
-    Process { id: wallustProc; running: false }
+    // reload the palette the instant wallust finishes writing colors.json
+    Process { id: wallustProc; running: false; onExited: Colors.reload() }
     Process { id: awwwProc; running: false }
-    Timer { id: wallustDelayTimer; interval: 500; repeat: false; onTriggered: wallustProc.running = true }
+    Timer { id: wallustDelayTimer; interval: 150; repeat: false; onTriggered: wallustProc.running = true }
 
     Text {
         id: header

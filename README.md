@@ -5,6 +5,17 @@ You really only need nixos with flakes enabled
 ### How to run it
 <code> sudo nixos-rebuild switch --flake github:dhmztr/nix-dots#legion </code>
 
+### Guided install
+Clone the repo and run the installer. It runs preflight checks, detects your
+monitors and patches the brightness config to match, sets up the Gmail / YouTube
+Music / RSS tabs, and offers to rebuild:
+<code> git clone https://github.com/dhmztr/nix-dots && cd nix-dots && ./install.sh </code>
+
+Notes: the flake targets host `legion` (rename it or add your own
+`nixosConfigurations` entry), and the user password is agenix-encrypted to the
+original machine, so set your own secret (see `secrets.nix`). External-monitor
+brightness needs a DDC/CI-capable monitor with DDC/CI enabled in its OSD.
+
 ### What does it contain
 
 - Interactive bar:

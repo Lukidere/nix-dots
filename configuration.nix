@@ -266,8 +266,12 @@ in
       "kvm"
       "video"
       "wireshark"
+      "i2c" # ddcutil DDC/CI for external monitor brightness (MSI MAG271R)
     ];
   };
+
+  # DDC/CI over I2C so ddcutil can drive the external monitor's brightness
+  hardware.i2c.enable = true;
 
   # ==========================================
   # 9. Environment Variables & Fonts
@@ -320,6 +324,7 @@ in
     fuzzel # dmenu-style picker (backend for bemoji)
     bemoji # emoji/glyph picker, copies to clipboard
     brightnessctl
+    ddcutil # external monitor brightness over DDC/CI (MSI MAG271R)
     networkmanagerapplet
     qt6.qtwayland
     qt6.qtdeclarative # qmlls for neovim + qml tooling

@@ -160,6 +160,7 @@ alias .....='cd ../../../..'
 alias ......='cd ../../../../..'
 alias copy="wl-copy"
 alias paste="wl-paste"
+alias cat='bat'
 
 # Shortcuts
 alias jctl="journalctl -p 3 -xb"

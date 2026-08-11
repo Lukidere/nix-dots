@@ -89,18 +89,20 @@ PanelWindow {
 
     Item {
         id: volPanelArea
-        // hover zone must cover strip's full hit area (640px tall, 12px wide on right)
-        // so cursor-on-strip also hovers this → show() cancels strip's pending hide, no flicker
         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-        // catch zone hugs panel - strip hitH now matches volPanelRect.height (380)
-        width: volPanelRect.width + 16
-        height: volPanelRect.height + 16
+        // KEEP-OPEN zone only: collapses to 0 while the panel is closed so it
+        // never catches hover (opening is solely the narrow TriggerStrip). When
+        // open it hugs the panel so moving cursor into it cancels the pending hide.
+        readonly property bool _open: volPanelRect._open
+        width:  _open ? volPanelRect.width + 16 : 0
+        height: _open ? volPanelRect.height + 16 : 0
 
         HoverHandler {
             onHoveredChanged: {
-                if (hovered && DashboardState.activeScreenName !== root.modelData.name)
-                    DashboardState.showVolPanel(root.modelData.name)
-                else if (!hovered)
+                // only fires when the zone is non-zero, i.e. panel already open
+                if (hovered)
+                    DashboardState.showVolPanel(root.modelData.name)  // cancel hide
+                else
                     DashboardState.scheduleHideVolPanel()
             }
         }
@@ -481,7 +483,7 @@ PanelWindow {
                         width: parent.width; spacing: Space.md
 
                         SectionHead { label: "CONTROLS"; ico: Tab.icon(0); accent: panel.accent }
-                        QuickControls { id: quickControls; width: parent.width }
+                        QuickControls { id: quickControls; width: parent.width; screenName: root.modelData.name }
                     }
                 }
 

@@ -131,17 +131,21 @@ Item {
             }
 
             Row {
+                id: ctlRow
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 6
+                spacing: 5
+                // derive button size from the column width so the row never
+                // overflows onto the left panel (5 buttons, the play btn +10)
+                readonly property int base: Math.max(24, Math.min(34, Math.floor((playerCol.width - 10 - 4 * spacing) / 5)))
                 Repeater {
                     // 0 prev - 1 play/pause - 2 next - 3 loop - 4 stop
                     model: 5
                     delegate: Rectangle {
                         required property int index
                         readonly property bool _loopOn: index === 3 && yt.loopMode !== "None"
-                        width: index === 1 ? 44 : 34
-                        height: index === 1 ? 44 : 34
-                        radius: index === 1 ? 22 : 17
+                        width: index === 1 ? ctlRow.base + 10 : ctlRow.base
+                        height: index === 1 ? ctlRow.base + 10 : ctlRow.base
+                        radius: width / 2
                         color: index === 1
                             ? (ytCtlMa.containsMouse ? Qt.lighter(root.accent, 1.15) : root.accent)
                             : _loopOn ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.25)

@@ -29,6 +29,7 @@ in
   home.packages = with pkgs; [
     #---- CLI ----#
     dust
+    bat
     glow
     bottom
     curl
@@ -44,6 +45,25 @@ in
     gh
     zoxide
     atuin
+    #---- modern CLI ----#
+    ripgrep # rg - grep
+    fzf # fuzzy finder
+    tealdeer # tldr - man examples
+    duf # df - disk usage
+    procs # ps - processes
+    sd # sed - find/replace
+    delta # pretty git diff
+    ouch # extract/compress anything
+    choose # cut/awk - columns
+    gping # ping with a graph
+    doggo # dig - DNS
+    xh # curl for HTTP/APIs
+    yazi # ranger - TUI file manager
+    zellij # tmux - multiplexer
+    broot # tree nav
+    direnv # per-dir env
+    just # command runner
+    tokei # code line stats
     #---- SHELL ----#
     ranger
     fish
@@ -139,6 +159,12 @@ in
       pull.rebase = false;
       core.editor = "nvim";
       safe.directory = "/etc/nixos";
+      # delta: syntax-highlighted, side-by-side diffs and blame
+      core.pager = "delta";
+      interactive.diffFilter = "delta --color-only";
+      delta.navigate = true;
+      delta.side-by-side = true;
+      merge.conflictStyle = "zdiff3";
     };
   };
 
@@ -210,28 +236,69 @@ in
     };
   };
 
-  # EasyEffects: autostart in the background with RNNoise denoise on the mic.
-  # The HM `extraPresets` option did not actually write the preset file, so the
-  # preset ships as a plain file and a oneshot loads it after the service is up.
+  # EasyEffects: autostart in the background. The effect chain (RNNoise denoise
+  # + Autotune, tuned in the GUI) persists in EasyEffects' own db and is restored
+  # on login, so no preset is force-loaded here (that would clobber GUI edits).
   services.easyeffects.enable = true;
-  xdg.configFile."easyeffects/input/denoise.json".source =
-    ./configs/easyeffects/input/denoise.json;
 
-  # Load the denoise preset into the running EasyEffects instance on login.
-  systemd.user.services.easyeffects-denoise = {
+  # Pin "Easy Effects Source" as the default mic so every app captures the
+  # processed (denoise + autotune) stream, not the raw mic.
+  systemd.user.services.ee-default-source = {
     Unit = {
-      Description = "Load EasyEffects denoise preset";
+      Description = "Pin Easy Effects Source as the default mic";
       After = [ "easyeffects.service" ];
       Requires = [ "easyeffects.service" ];
       PartOf = [ "easyeffects.service" ];
     };
     Service = {
       Type = "oneshot";
-      ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
-      ExecStart = "${pkgs.easyeffects}/bin/easyeffects -l denoise";
+      ExecStartPre = "${pkgs.coreutils}/bin/sleep 3";
+      ExecStart = ''${pkgs.pipewire}/bin/pw-metadata -n default 0 default.configured.audio.source "{\"name\":\"easyeffects_source\"}"'';
     };
     Install = {
       WantedBy = [ "easyeffects.service" ];
+    };
+  };
+
+  # Self-monitor (hear your own processed/autotuned mic) is NOT always-on - it
+  # feeds back on speakers and is tiring. Toggle it on demand with MOD+SHIFT+A
+  # (see the niri bind), which starts/stops a pw-loopback to the output sink.
+
+  # Internal panel runs 240Hz on AC, drops to 60Hz on battery to save power.
+  # Watches the AC online flag and retunes eDP-1 via `niri msg` on change.
+  systemd.user.services.niri-refresh-ac = {
+    Unit = {
+      Description = "Switch eDP-1 to 60Hz on battery, 240Hz on AC";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.writeShellScript "niri-refresh-ac" ''
+        export PATH=/run/current-system/sw/bin:$PATH
+        apply() {
+          NIRI_SOCKET="$(ls -t /run/user/$(id -u)/niri.*.sock 2>/dev/null | head -1)"
+          [ -n "$NIRI_SOCKET" ] || return 1
+          export NIRI_SOCKET
+          if [ "$1" = 1 ]; then
+            niri msg output eDP-1 mode "2560x1600@240.000"
+          else
+            niri msg output eDP-1 mode "2560x1600@60.000"
+          fi
+        }
+        last=""
+        while :; do
+          on=$(cat /sys/class/power_supply/ACAD/online 2>/dev/null)
+          if [ "$on" != "$last" ]; then
+            if apply "$on"; then last="$on"; fi
+          fi
+          sleep 3
+        done
+      ''}";
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 

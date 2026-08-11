@@ -88,14 +88,15 @@ Item {
 
     Process { id: htopProc; command: ["sh", "-c", "ghostty -e htop"]; running: false }
 
+    // hover expands `flyout` - horizontal usage bars aligned to each ring
+    property bool statsHovered: false
+    Timer { id: _statsHide; interval: 180; onTriggered: root.statsHovered = false }
+
     MouseArea {
         id: ma; anchors.fill: parent; hoverEnabled: true
         onClicked: { htopProc.running = false; htopProc.running = true }
-        onEntered: TooltipState.show(
-            "CPU " + Math.round(root.cpuPct) + "%  |  RAM " + Math.round(root.ramPct) + "% (" + root.ramLabel + ")" +
-            "  |  Disk " + Math.round(root.diskPct) + "% (" + root.diskLabel + ")  |  GPU " + Math.round(root.gpuPct) + "%  |  click for htop",
-            mapToGlobal(0, height / 2).y, root.barScreen)
-        onExited: TooltipState.hide()
+        onEntered: { root.statsHovered = true; _statsHide.stop() }
+        onExited:  _statsHide.restart()
     }
 
     Column {
@@ -122,6 +123,82 @@ Item {
             pct: root.gpuPct; icon: "\u{F43F}"
             ringColor: root.gpuPct > 80 ? Colors.color1 : root.gpuPct > 50 ? Colors.color3 : Colors.color6
             hovered: ma.containsMouse
+        }
+    }
+
+    // ── hover flyout: horizontal usage bars, one per ring, at matching height ──
+    Item {
+        id: flyout
+        x: root.width + 8
+        y: 0
+        width: 210
+        height: col.height
+        opacity: root.statsHovered ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+        HoverHandler {
+            onHoveredChanged: {
+                if (hovered) { root.statsHovered = true; _statsHide.stop() }
+                else _statsHide.restart()
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -6
+            radius: 12
+            color: Qt.lighter(Colors.background, 1.25)
+            border.width: 1
+            border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.25)
+        }
+
+        Column {
+            anchors.fill: parent
+            spacing: 2
+            StatBar { label: "CPU";  pct: root.cpuPct;  accent: root.cpuPct  > 80 ? Colors.color1 : root.cpuPct  > 50 ? Colors.color3 : Colors.color2 }
+            StatBar { label: "RAM";  pct: root.ramPct;  accent: root.ramPct  > 80 ? Colors.color1 : root.ramPct  > 50 ? Colors.color3 : Colors.color4 }
+            StatBar { label: "DISK"; pct: root.diskPct; accent: root.diskPct > 90 ? Colors.color1 : root.diskPct > 70 ? Colors.color3 : Colors.color5 }
+            StatBar { label: "GPU";  pct: root.gpuPct;  accent: root.gpuPct  > 80 ? Colors.color1 : root.gpuPct  > 50 ? Colors.color3 : Colors.color6 }
+        }
+    }
+
+    // one row: LABEL [====== ] NN%  - height matches an ArcRing so rows line up
+    component StatBar: Item {
+        id: sb
+        property string label:  ""
+        property real   pct:    0
+        property color  accent: Colors.color4
+        width: 210; height: 38
+
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+            Text {
+                width: 34; height: sb.height
+                text: sb.label
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10; font.bold: true
+                color: Colors.foreground
+                verticalAlignment: Text.AlignVCenter
+            }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 118; height: 6; radius: 3
+                color: Qt.rgba(Colors.color8.r, Colors.color8.g, Colors.color8.b, 0.2)
+                Rectangle {
+                    width: parent.width * Math.max(0, Math.min(1, sb.pct / 100))
+                    height: parent.height; radius: 3; color: sb.accent
+                    Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                }
+            }
+            Text {
+                width: 34; height: sb.height
+                text: Math.round(sb.pct) + "%"
+                font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                color: sb.accent
+                horizontalAlignment: Text.AlignRight
+                verticalAlignment: Text.AlignVCenter
+            }
         }
     }
 

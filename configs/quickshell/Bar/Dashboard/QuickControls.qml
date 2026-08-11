@@ -13,6 +13,16 @@ Item {
     property int  brightness: 50
     property bool eyeHealth:  false
 
+    // which monitor this instance controls; eDP-2 is the laptop panel
+    // (brightnessctl), everything else is the external MSI over DDC/CI (ddcutil)
+    property string screenName: ""
+    // laptop panel connector is eDP-* (here eDP-1); anything else is external
+    readonly property bool _isInternal: screenName.indexOf("eDP") === 0
+    onScreenNameChanged: {
+        if (_isInternal) { _brightProc.running = false; _brightProc.running = true }
+        else             { _ddcGet.running = false;     _ddcGet.running = true }
+    }
+
     // expose weather data so the dashboard hero can reuse it
     property alias weatherIcon: wxData.wIcon
     property alias weatherTemp: wxData.temp
@@ -45,7 +55,7 @@ Item {
 
     readonly property Process _brightProc: Process {
         command: ["sh","-c","echo $(( $(brightnessctl get -d amdgpu_bl1) * 100 / $(brightnessctl max -d amdgpu_bl1) ))"]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const v = parseInt(this.text.trim())
@@ -53,13 +63,42 @@ Item {
             }
         }
     }
-    Timer { interval: 3000; running: true; repeat: true
+    // only the laptop panel polls brightnessctl; external monitors read via ddcutil
+    Timer { interval: 3000; running: root._isInternal; repeat: true
             onTriggered: { root._brightProc.running=false; root._brightProc.running=true } }
 
     Process { id: _volSet;     running: false }
     Process { id: _muteToggle; command: ["wpctl","set-mute","@DEFAULT_AUDIO_SINK@","toggle"];   running: false }
     Process { id: _micToggle;  command: ["wpctl","set-mute","@DEFAULT_AUDIO_SOURCE@","toggle"]; running: false }
     Process { id: _brightSet;  running: false }
+
+    // external monitor (MSI MAG271R) brightness over DDC/CI - debounced because
+    // ddcutil is slow (~200ms/call) and slider drags fire setBrightness rapidly
+    property int _ddcPending: -1
+    Process { id: _ddcSet; running: false }
+    Timer {
+        id: _ddcTimer; interval: 250
+        onTriggered: {
+            if (root._ddcPending < 0) return
+            _ddcSet.command = ["ddcutil", "--model", "MSI MAG271R", "--noverify",
+                               "setvcp", "10", String(root._ddcPending)]
+            _ddcSet.running = false; _ddcSet.running = true
+        }
+    }
+    // read the external monitor's current brightness (once, on this screen)
+    Process {
+        id: _ddcGet
+        command: ["ddcutil", "--model", "MSI MAG271R", "--brief", "getvcp", "10"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                // brief format: "VCP 10 C <current> <max>"
+                const p = this.text.trim().split(/\s+/)
+                const cur = parseInt(p[3]); const max = parseInt(p[4])
+                if (!isNaN(cur) && max > 0) root.brightness = Math.round(cur / max * 100)
+            }
+        }
+    }
 
     function setVolume(v) {
         root.volume = v
@@ -79,8 +118,14 @@ Item {
     }
     function setBrightness(v) {
         root.brightness = v
-        _brightSet.command = ["brightnessctl","set","-d","amdgpu_bl1",v+"%"]
-        _brightSet.running = false; _brightSet.running = true
+        if (root._isInternal) {
+            _brightSet.command = ["brightnessctl","set","-d","amdgpu_bl1",v+"%"]
+            _brightSet.running = false; _brightSet.running = true
+        } else {
+            // external MSI monitor, throttled via _ddcTimer (ddcutil is slow)
+            root._ddcPending = v
+            _ddcTimer.restart()
+        }
     }
     Process { id: _eyeOn;      command: ["sh", "-c", "gammastep &"]; running: false }
     Process { id: _eyeOff;     command: ["sh","-c", "pkill -f [g]ammastep"]; running: false }

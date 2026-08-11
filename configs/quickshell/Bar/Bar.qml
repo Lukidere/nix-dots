@@ -13,7 +13,7 @@ PanelWindow {
 
     anchors { left: true; top: true; bottom: true }
     exclusiveZone: 56
-    implicitWidth: (wifiWidget.menuOpen || btWidget.menuOpen || batWidget.menuOpen) ? 56 + 280 : 56
+    implicitWidth: (wifiWidget.menuOpen || btWidget.menuOpen || batWidget.menuOpen || cpuWidget.statsHovered) ? 56 + 280 : 56
     Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     WlrLayershell.layer: WlrLayer.Top
@@ -37,7 +37,7 @@ PanelWindow {
             spacing: 4
             Cachy {}
             Clock { barScreen: root.modelData }
-            Cpu { barScreen: root.modelData }
+            Cpu { id: cpuWidget; barScreen: root.modelData }
         }
 
         Column {

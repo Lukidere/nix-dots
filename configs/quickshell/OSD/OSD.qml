@@ -32,36 +32,7 @@ PanelWindow {
         else _closeTimer.restart()
     }
 
-    property int  _lastBright: -1
-
-    // ── Brightness polling ───────────────────────────────────────────
-    readonly property Process _brightProc: Process {
-        command: ["sh", "-c",
-            "echo $(( $(brightnessctl get -d amdgpu_bl1) * 100 / $(brightnessctl max -d amdgpu_bl1) )) 2>/dev/null"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const v = parseInt(this.text.trim())
-                if (isNaN(v)) return
-                if (root._lastBright >= 0 && v !== root._lastBright
-                        && root.modelData.name === NotifState.focusedScreen
-                        && DashboardState.volPanelScreen !== root.modelData.name) {
-                    root.osdType    = "brightness"
-                    root.osdValue   = v
-                    root.osdMuted   = false
-                    root.osdVisible = true
-                    hideTimer.restart()
-                }
-                root._lastBright = v
-            }
-        }
-    }
-    Timer {
-        // only focused screen polls
-        interval: 400; repeat: true
-        running: root.modelData.name === NotifState.focusedScreen
-        onTriggered: { root._brightProc.running = false; root._brightProc.running = true }
-    }
+    // Brightness OSD removed (no bottom-of-screen popup on brightness change).
 
     Timer {
         id: hideTimer
