@@ -171,6 +171,7 @@ binds {
     MOD+CTRL+S       hotkey-overlay-title="Screenshot window"                 { screenshot-window write-to-disk=true; }
     MOD+P            hotkey-overlay-title="Color picker"                      { spawn-sh "pgrep -x hyprpicker >/dev/null || hyprpicker -a"; }
     MOD+Period       hotkey-overlay-title="Emoji picker"                      { spawn-sh "bemoji -n"; }
+    MOD+SHIFT+T      hotkey-overlay-title="OCR region to clipboard"           { spawn-sh "ocr-clip"; }
     MOD+SHIFT+A      hotkey-overlay-title="Toggle mic self-monitor"          { spawn-sh "pkill -f 'pw-loopback.*easyeffects_source' || pw-loopback --capture-props=target.object=easyeffects_source --playback-props=target.object=alsa_output.pci-0000_06_00.6.analog-stereo"; }
 }
 

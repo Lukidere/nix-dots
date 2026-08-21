@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import "../../Theme"
 
 // Music tab - YT Music, horizontal: player left, browser right.
@@ -29,6 +30,21 @@ Item {
     property string ytBrowse: "search"  // search, playlists, liked
     property string ytView: "browse"    // browse, tracks
 
+    // ── Discord rich presence toggle (systemd user service `discord-rpc`) ──
+    property bool rpcActive: false
+    Process {
+        id: _rpcState; command: ["systemctl","--user","is-active","discord-rpc"]; running: true
+        stdout: StdioCollector { onStreamFinished: root.rpcActive = this.text.trim() === "active" }
+    }
+    Process { id: _rpcToggle; running: false
+        onExited: { _rpcState.running = false; _rpcState.running = true } }
+    Timer { interval: 5000; running: true; repeat: true
+        onTriggered: { _rpcState.running = false; _rpcState.running = true } }
+    function toggleRpc() {
+        _rpcToggle.command = ["systemctl","--user", root.rpcActive ? "stop" : "start", "discord-rpc"]
+        _rpcToggle.running = false; _rpcToggle.running = true
+    }
+
     Row {
         anchors.fill: parent
         spacing: 14
@@ -40,6 +56,27 @@ Item {
             width: Math.round((parent.width - 14) * 0.38)
             spacing: 10
             anchors.verticalCenter: parent.verticalCenter
+
+            // Discord rich presence toggle
+            Rectangle {
+                width: parent.width; height: 26; radius: 8
+                color: rpcMa.containsMouse ? Qt.lighter(Colors.background, 1.5) : Qt.lighter(Colors.background, 1.25)
+                Behavior on color { ColorAnimation { duration: 100 } }
+                Row {
+                    anchors.centerIn: parent; spacing: 6
+                    Text {
+                        text: "\u{F066F}"; font.family: "Iosevka Nerd Font"; font.pixelSize: 13
+                        color: root.rpcActive ? "#5865F2" : Colors.color8
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                    Text {
+                        text: root.rpcActive ? "Discord RPC on" : "Discord RPC off"
+                        font.family: "Iosevka Nerd Font"; font.pixelSize: 10
+                        color: root.rpcActive ? Colors.foreground : Colors.color8
+                    }
+                }
+                MouseArea { id: rpcMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.toggleRpc() }
+            }
 
             Item {
                 width: parent.width

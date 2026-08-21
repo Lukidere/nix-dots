@@ -35,7 +35,7 @@ Item {
     Timer { id: _eyeLock;   interval: 4000; onTriggered: root._lockEye   = false }
 
     readonly property Process _audioProc: Process {
-        command: ["sh","-c","wpctl get-volume @DEFAULT_AUDIO_SINK@ && wpctl get-volume @DEFAULT_AUDIO_SOURCE@"]
+        command: ["sh","-c","wpctl get-volume @DEFAULT_AUDIO_SINK@ && sh \"$HOME/.config/quickshell/scripts/qs-micmute.sh\" status"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -69,7 +69,7 @@ Item {
 
     Process { id: _volSet;     running: false }
     Process { id: _muteToggle; command: ["wpctl","set-mute","@DEFAULT_AUDIO_SINK@","toggle"];   running: false }
-    Process { id: _micToggle;  command: ["wpctl","set-mute","@DEFAULT_AUDIO_SOURCE@","toggle"]; running: false }
+    Process { id: _micToggle;  command: ["sh","-c","sh \"$HOME/.config/quickshell/scripts/qs-micmute.sh\" toggle"]; running: false }
     Process { id: _brightSet;  running: false }
 
     // external monitor (MSI MAG271R) brightness over DDC/CI - debounced because

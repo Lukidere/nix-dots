@@ -53,7 +53,13 @@ in
       "btrtl"
       "amdgpu"
     ];
-    kernelParams = [ "nvidia-drm.modeset=1" "quiet" "splash" "loglevel=3" "udev.log_level=3" ];
+    kernelParams = [
+      "nvidia-drm.modeset=1"
+      "quiet"
+      "splash"
+      "loglevel=3"
+      "udev.log_level=3"
+    ];
     consoleLogLevel = 0;
     initrd.verbose = false;
     plymouth.enable = true;
@@ -123,6 +129,7 @@ in
     alsa.support32Bit = true;
     pulse.enable = true;
     wireplumber.enable = true;
+    jack.enable = true;
   };
 
   services.blueman.enable = true;
@@ -146,8 +153,14 @@ in
         cursor_theme_name = "Adwaita";
       };
       commands = {
-        reboot = [ "systemctl" "reboot" ];
-        poweroff = [ "systemctl" "poweroff" ];
+        reboot = [
+          "systemctl"
+          "reboot"
+        ];
+        poweroff = [
+          "systemctl"
+          "poweroff"
+        ];
       };
     };
     # Mirrors the gtklock lock-screen look (wallust rose-pine template)
@@ -227,7 +240,7 @@ in
   services.restic.backups.home = {
     initialize = true;
     repository = "/var/backup/restic";
-    passwordFile = "/etc/restic-pw";  # plain file, chmod 600 (not in repo)
+    passwordFile = "/etc/restic-pw"; # plain file, chmod 600 (not in repo)
     paths = [ "/home/dhm" ];
     exclude = [
       "/home/dhm/.cache"
@@ -237,8 +250,15 @@ in
       "/home/dhm/**/.git"
       "/home/dhm/dotsy/configs/wallpapers"
     ];
-    timerConfig = { OnCalendar = "daily"; Persistent = true; };
-    pruneOpts = [ "--keep-daily 7" "--keep-weekly 4" "--keep-monthly 6" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+    pruneOpts = [
+      "--keep-daily 7"
+      "--keep-weekly 4"
+      "--keep-monthly 6"
+    ];
   };
   services.tailscale.enable = true;
   services.flatpak.enable = true;
@@ -265,6 +285,7 @@ in
       "libvirtd"
       "kvm"
       "video"
+      "audio"
       "wireshark"
       "i2c" # ddcutil DDC/CI for external monitor brightness (MSI MAG271R)
     ];
@@ -316,6 +337,22 @@ in
     psmisc
     wget
     wl-clipboard
+    # OCR a selected region to the clipboard (PowerToys Text Extractor style)
+    (writeShellScriptBin "ocr-clip" ''
+      set -eu
+      geom="$(${slurp}/bin/slurp)" || exit 0
+      [ -n "$geom" ] || exit 0
+      img="$(mktemp --suffix=.png)"
+      ${grim}/bin/grim -g "$geom" "$img"
+      txt="$(${tesseract.override { enableLanguages = [ "eng" "pol" ]; }}/bin/tesseract "$img" - -l eng+pol 2>/dev/null || true)"
+      rm -f "$img"
+      if [ -n "$txt" ]; then
+        printf '%s' "$txt" | ${wl-clipboard}/bin/wl-copy
+        ${libnotify}/bin/notify-send -t 2000 "OCR" "Text copied to clipboard"
+      else
+        ${libnotify}/bin/notify-send -t 2000 "OCR" "No text found"
+      fi
+    '')
     # --- Desktop, Wayland & WM Tools ---
     quickshell
     fd
@@ -382,6 +419,7 @@ in
     rust-analyzer
     rustfmt
     rustc
+    clippy
     trunk
     wasm-bindgen-cli
 

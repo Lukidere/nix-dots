@@ -40,10 +40,12 @@ brightness needs a DDC/CI-capable monitor with DDC/CI enabled in its OSD.
      - Notification and clipboard center
      - Gmail inbox tab (unread badge, opening a mail marks it read via IMAP, simplified body view)
      - News tab: merged RSS/Atom feed reader (configurable feeds, click opens in browser)
+     - Music tab: toggle Discord rich presence for what you are listening to
      - detailed internet/bluetooth control panel with info about the system
 - App launcher with subsections and a calculator
 - File manager (trash-safe delete, sorting, keyboard navigation, open-terminal-here)
 - Emoji picker (bemoji + themed fuzzel, copies to clipboard) and color picker (hyprpicker, copies hex)
+- OCR any screen region to the clipboard (grim + tesseract eng/pol, MOD+SHIFT+T)
 - Mic noise suppression via EasyEffects (RNNoise), auto-loaded on login
 - Themed login (regreet) matching the gtklock lock screen
 - Silent boot with plymouth splash

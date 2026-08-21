@@ -20,3 +20,6 @@ configs/libreoffice/
 # python bytecode
 __pycache__/
 *.pyc
+
+# ruflo/omo session artifacts
+.omo/

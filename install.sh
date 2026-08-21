@@ -135,6 +135,19 @@ setup_rss() {
         "https://lwn.net/headlines/newrss" > "$f"
     ok "seeded default RSS feeds at $f"
 }
+setup_discord() {
+    local f="$HOME/.config/qs-discord-rpc/app_id"
+    [[ -s "$f" ]] && { ok "Discord rich presence already configured"; return; }
+    ask "set up Discord rich presence (music tab) now?" || return
+    warn "create an app at https://discord.com/developers/applications and copy its"
+    warn "Application ID (its name becomes the 'Listening to ...' label). Also enable"
+    warn "Rich Presence in Vesktop settings."
+    local id
+    read -rp "   Discord Application ID: " id
+    [[ -n "$id" ]] || { warn "skipped (empty)"; return; }
+    mkdir -p "$(dirname "$f")"; printf '%s\n' "$id" > "$f"
+    ok "wrote $f - toggle it from the music tab after rebuild"
+}
 
 # ── build ────────────────────────────────────────────────────────────
 rebuild() {
@@ -158,6 +171,7 @@ main() {
     setup_gmail
     setup_ytmusic
     setup_rss
+    setup_discord
     rebuild
     say "Done. See README.md for the manual bits (secrets, host rename)."
 }

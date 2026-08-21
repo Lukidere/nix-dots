@@ -45,6 +45,7 @@ in
     gh
     zoxide
     atuin
+    playerctl # MPRIS control - used by the Discord rich-presence daemon
     #---- modern CLI ----#
     ripgrep # rg - grep
     fzf # fuzzy finder
@@ -72,10 +73,12 @@ in
     starship
     # --- Applications ---
     brave
+    renoise
     libreoffice
     librewolf
     vesktop
     zathura
+    audacity
   ];
   home.stateVersion = "25.11";
 
@@ -260,12 +263,6 @@ in
     };
   };
 
-  # Self-monitor (hear your own processed/autotuned mic) is NOT always-on - it
-  # feeds back on speakers and is tiring. Toggle it on demand with MOD+SHIFT+A
-  # (see the niri bind), which starts/stops a pw-loopback to the output sink.
-
-  # Internal panel runs 240Hz on AC, drops to 60Hz on battery to save power.
-  # Watches the AC online flag and retunes eDP-1 via `niri msg` on change.
   systemd.user.services.niri-refresh-ac = {
     Unit = {
       Description = "Switch eDP-1 to 60Hz on battery, 240Hz on AC";
@@ -299,6 +296,30 @@ in
     };
     Install = {
       WantedBy = [ "graphical-session.target" ];
+    };
+  };
+  nixpkgs.overlays = [
+    (self: super: {
+      renoise = super.renoise.override {
+        releasePath = /home/dhm/Renoise_3_5_4_Demo_Linux_x86_64.tar.gz;
+      };
+    })
+  ];
+
+  # Discord rich presence for the dashboard's music (mpv MPRIS -> Discord IPC).
+  # NOT auto-started - toggle it from the music tab or with systemctl. Needs
+  # Vesktop's Rich Presence enabled and a Discord app id in ~/.config/qs-discord-rpc/app_id.
+  systemd.user.services.discord-rpc = {
+    Unit = {
+      Description = "Discord rich presence from the dashboard's mpv (YT Music)";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Environment = "PATH=${pkgs.playerctl}/bin:/run/current-system/sw/bin";
+      ExecStart = "${pkgs.python3}/bin/python3 %h/.config/quickshell/scripts/qs-discord-rpc.py";
+      Restart = "on-failure";
+      RestartSec = "5s";
     };
   };
 
