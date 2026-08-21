@@ -13,6 +13,7 @@ Run it as a toggled user service; it polls mpv and updates the presence.
 import glob
 import json
 import os
+import re
 import socket
 import struct
 import subprocess
@@ -120,10 +121,18 @@ def build_activity():
             act["timestamps"] = {"end": int(time.time()) + max(0, length - pos)}
     except (ValueError, TypeError):
         pass
+    url = pctl("metadata", "xesam:url")
+    # cover: mpv does not expose artUrl over mpris, so derive the YouTube
+    # thumbnail from the watch URL's video id (fallback to any http artUrl)
     art = pctl("metadata", "mpris:artUrl")
+    m = re.search(r"[?&]v=([\w-]{6,})", url)
+    if not art.startswith("http") and m:
+        art = "https://i.ytimg.com/vi/%s/hqdefault.jpg" % m.group(1)
     if art.startswith("http"):
         act["assets"] = {"large_image": art,
                          "large_text": (pctl("metadata", "xesam:album") or title)[:128]}
+    if url.startswith("http"):
+        act["buttons"] = [{"label": "Listen on YouTube Music", "url": url}]
     return act
 
 
