@@ -29,23 +29,25 @@ brightness needs a DDC/CI-capable monitor with DDC/CI enabled in its OSD.
      - battery info
      - power menu
 - Dashboard
-     - Detailed volume and brightness menu
+     - Detailed volume and brightness menu (per-monitor brightness incl. external over DDC/CI)
+     - Per-app volume mixer: every app playing audio with its own slider and mute
      - Connection info
      - Eye health toggle
      - Performance tab
-     - YouTube Music player (search, playlists, liked songs - headless mpv playback with premium quality streams, seekable progress bar)
+     - YouTube Music launcher: search-as-you-type results, playlists, liked songs, build a queue on the fly (+ per track) while music plays - headless mpv with premium-quality streams, seekable progress bar
      - Detailed calendar with weather
      - Pomodoro timer and todo list
-     - Interactive wallpaper changer which uses wallust to change theme of most apps (cached thumbnails, instant browsing)
+     - Interactive coverflow wallpaper carousel (scroll/drag, click or Enter to set) which uses wallust to retheme most apps (cached thumbnails, instant browsing)
      - Notification and clipboard center
      - Gmail inbox tab (unread badge, opening a mail marks it read via IMAP, simplified body view)
      - News tab: merged RSS/Atom feed reader (configurable feeds, click opens in browser)
-     - Music tab: toggle Discord rich presence for what you are listening to
+     - Music tab: toggle Discord rich presence (cover art, progress, link) for what you are listening to
      - detailed internet/bluetooth control panel with info about the system
 - App launcher with subsections and a calculator
 - File manager (trash-safe delete, sorting, keyboard navigation, open-terminal-here)
 - Emoji picker (bemoji + themed fuzzel, copies to clipboard) and color picker (hyprpicker, copies hex)
 - OCR any screen region to the clipboard (grim + tesseract eng/pol, MOD+SHIFT+T)
+- Screenshot notifications show a thumbnail preview of the capture
 - Mic noise suppression via EasyEffects (RNNoise), auto-loaded on login
 - Themed login (regreet) matching the gtklock lock screen
 - Silent boot with plymouth splash

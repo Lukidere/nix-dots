@@ -33,23 +33,44 @@ Item {
         _proc.running = true
     }
 
+    // the tracks currently queued in mpv (for the Queue tab)
+    property var queue: []
+    readonly property string _ipc: "/tmp/qs-mpv-ipc.sock"
+
     // Play queue starting at index; mpv+mpris exposes prev/next/pause to the bar.
     function playQueue(list, index) {
         // Premium quality: web_music client + cookies.txt (qs-ytmusic.py cookies)
         // + PO tokens from the bgutil-pot container via the yt-dlp plugin.
         const cookies = Quickshell.env("HOME") + "/.config/qs-ytmusic/cookies.txt"
         const args = ["mpv", "--no-video", "--no-terminal",
+                      "--input-ipc-server=" + root._ipc,
                       "--ytdl-raw-options=cookies=" + cookies + ",extractor-args=youtube:player_client=web_music",
                       "--playlist-start=" + index]
         for (const t of list)
             args.push("https://music.youtube.com/watch?v=" + t.id)
+        root.queue = list.slice()
         root.nowId = list[index] ? list[index].id : ""
         _player.running = false
         _player.command = args
         _player.running = true
     }
 
-    function stop() { _player.running = false; root.nowId = "" }
+    // Add a track to the running queue (mpv IPC). Starts playback if idle.
+    function enqueue(t) {
+        if (root.nowId === "" || !_player.running) { root.playQueue([t], 0); return }
+        _mpvCmd({ command: ["loadfile", "https://music.youtube.com/watch?v=" + t.id, "append-play"] })
+        root.queue = root.queue.concat([t])
+    }
+    readonly property Process _ipcProc: Process {}
+    function _mpvCmd(obj) {
+        _ipcProc.running = false
+        _ipcProc.command = ["python3", "-c",
+            "import socket,sys\ns=socket.socket(socket.AF_UNIX)\ntry:\n s.connect(sys.argv[1]); s.sendall((sys.argv[2]+chr(10)).encode())\nexcept OSError: pass",
+            root._ipc, JSON.stringify(obj)]
+        _ipcProc.running = true
+    }
+
+    function stop() { _player.running = false; root.nowId = ""; root.queue = [] }
 
     // ── mpv-targeted transport (independent from the bar's generic MPRIS) ──
     property string mpvStatus: ""

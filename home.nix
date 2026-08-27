@@ -218,6 +218,41 @@ in
       "application/json" = "nvim.desktop";
       "application/x-yaml" = "nvim.desktop";
       "application/toml" = "nvim.desktop";
+      # more code/markup -> nvim
+      "text/markdown" = "nvim.desktop";
+      "text/x-markdown" = "nvim.desktop";
+      "text/css" = "nvim.desktop";
+      "text/javascript" = "nvim.desktop";
+      "application/javascript" = "nvim.desktop";
+      "application/xml" = "nvim.desktop";
+      "text/x-c++src" = "nvim.desktop";
+      "text/x-java" = "nvim.desktop";
+      "text/x-rust" = "nvim.desktop";
+      "text/x-lua" = "nvim.desktop";
+      "text/x-sql" = "nvim.desktop";
+      # LibreOffice - office documents
+      "application/vnd.oasis.opendocument.text" = "writer.desktop";
+      "application/msword" = "writer.desktop";
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = "writer.desktop";
+      "application/rtf" = "writer.desktop";
+      "application/vnd.oasis.opendocument.spreadsheet" = "calc.desktop";
+      "application/vnd.ms-excel" = "calc.desktop";
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = "calc.desktop";
+      "text/csv" = "calc.desktop";
+      "application/vnd.oasis.opendocument.presentation" = "impress.desktop";
+      "application/vnd.ms-powerpoint" = "impress.desktop";
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = "impress.desktop";
+      "application/vnd.oasis.opendocument.graphics" = "draw.desktop";
+      # more images -> imv
+      "image/avif" = "imv.desktop";
+      "image/heic" = "imv.desktop";
+      "image/jxl" = "imv.desktop";
+      # more audio/video -> mpv
+      "audio/opus" = "mpv.desktop";
+      "audio/x-m4a" = "mpv.desktop";
+      "audio/wav" = "mpv.desktop";
+      "video/x-ms-wmv" = "mpv.desktop";
+      "video/3gpp" = "mpv.desktop";
       "x-scheme-handler/terminal" = "com.mitchellh.ghostty.desktop";
       "x-scheme-handler/claude-cli" = "claude-code-url-handler.desktop";
     };
@@ -298,6 +333,22 @@ in
       WantedBy = [ "graphical-session.target" ];
     };
   };
+  # Wallpaper daemon as a service so it auto-restarts - if awww-daemon dies the
+  # wallpaper silently goes black (awww img can't reach the socket).
+  systemd.user.services.awww-daemon = {
+    Unit = {
+      Description = "awww wallpaper daemon";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "/run/current-system/sw/bin/awww-daemon";
+      Restart = "on-failure";
+      RestartSec = "2s";
+    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
+  };
+
   nixpkgs.overlays = [
     (self: super: {
       renoise = super.renoise.override {

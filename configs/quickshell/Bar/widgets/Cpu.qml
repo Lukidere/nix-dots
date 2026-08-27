@@ -71,19 +71,22 @@ Item {
     }
 
     property real gpuPct: 0
-    readonly property Process gpuProc: Process {
-        command: ["sh", "-c", "cat /sys/class/drm/card*/device/gpu_busy_percent 2>/dev/null | head -1"]
+    property string _gpuPath: ""
+    // resolve the amdgpu busy-percent sysfs path once, then read it via FileView
+    // each tick - avoids spawning `cat ... | head` every 2s in an always-on widget
+    readonly property Process _gpuFind: Process {
+        command: ["sh", "-c", "ls /sys/class/drm/card*/device/gpu_busy_percent 2>/dev/null | head -1"]
         running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const t = this.text.trim()
-                if (t) root.gpuPct = Math.min(100, Math.max(0, parseInt(t) || 0))
-            }
-        }
+        stdout: StdioCollector { onStreamFinished: root._gpuPath = this.text.trim() }
     }
+    readonly property FileView _gpuFile: FileView { path: root._gpuPath; watchChanges: false }
     Timer {
-        interval: 2000; running: true; repeat: true
-        onTriggered: { root.gpuProc.running = false; root.gpuProc.running = true }
+        interval: 2000; running: root._gpuPath !== ""; repeat: true
+        onTriggered: {
+            root._gpuFile.reload()
+            const t = root._gpuFile.text().trim()
+            if (t) root.gpuPct = Math.min(100, Math.max(0, parseInt(t) || 0))
+        }
     }
 
     Process { id: htopProc; command: ["sh", "-c", "ghostty -e htop"]; running: false }

@@ -20,7 +20,7 @@ Item {
 
     readonly property FileView _statFile: FileView { path: "/proc/stat"; watchChanges: false }
     Timer {
-        interval: 2000; running: true; repeat: true
+        interval: 2000; running: root.visible; triggeredOnStart: true; repeat: true
         onTriggered: {
             root._statFile.reload()
             const t = root._statFile.text()
@@ -39,7 +39,7 @@ Item {
 
     readonly property Process _gpuProc: Process {
         command: ["sh", "-c", "cat /sys/class/drm/card*/device/gpu_busy_percent 2>/dev/null | head -1"]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const v = parseInt(this.text.trim())
@@ -48,13 +48,13 @@ Item {
         }
     }
     Timer {
-        interval: 2000; running: true; repeat: true
+        interval: 2000; running: root.visible; triggeredOnStart: true; repeat: true
         onTriggered: { root._gpuProc.running = false; root._gpuProc.running = true }
     }
 
     readonly property FileView _memFile: FileView { path: "/proc/meminfo"; watchChanges: false }
     Timer {
-        interval: 3000; running: true; repeat: true
+        interval: 3000; running: root.visible; triggeredOnStart: true; repeat: true
         onTriggered: {
             root._memFile.reload()
             const t = root._memFile.text()
@@ -69,7 +69,7 @@ Item {
 
     readonly property Process _diskProc: Process {
         command: ["df", "-BM", "/home", "--output=size,used"]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = this.text.trim().split("\n")
@@ -83,14 +83,14 @@ Item {
         }
     }
     Timer {
-        interval: 10000; running: true; repeat: true
+        interval: 10000; running: root.visible; triggeredOnStart: true; repeat: true
         onTriggered: { root._diskProc.running = false; root._diskProc.running = true }
     }
 
     readonly property FileView _loadFile:   FileView { path: "/proc/loadavg"; watchChanges: false }
     readonly property FileView _uptimeFile: FileView { path: "/proc/uptime";  watchChanges: false }
     Timer {
-        interval: 5000; running: true; repeat: true
+        interval: 5000; running: root.visible; triggeredOnStart: true; repeat: true
         onTriggered: {
             root._loadFile.reload()
             const lt = root._loadFile.text()

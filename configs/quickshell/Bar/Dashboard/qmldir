@@ -15,5 +15,7 @@ singleton YtMusicState 1.0 YtMusicState.qml
 singleton GmailState 1.0 GmailState.qml
 singleton ClipboardState 1.0 ClipboardState.qml
 singleton RssState 1.0 RssState.qml
+singleton AppVolState 1.0 AppVolState.qml
 MailSection 1.0 MailSection.qml
 RssSection 1.0 RssSection.qml
+AppMixer 1.0 AppMixer.qml

@@ -76,27 +76,31 @@ Item {
                             color: Colors.color6
                         }
 
-                        // horizontal slider
-                        Rectangle {
-                            id: track
+                        // dynamic slider (music-tab feel): thin pill, grows and
+                        // brightens on hover, fill glides smoothly, instant on drag
+                        Item {
                             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                            height: 5; radius: 2
-                            color: Qt.lighter(Colors.background, 1.5)
+                            height: 12
                             Rectangle {
-                                width: parent.width * Math.max(0, Math.min(1, modelData.volume / 100))
-                                height: parent.height; radius: 2
-                                color: modelData.muted ? Colors.color1 : root.accent
-                                Behavior on width { NumberAnimation { duration: sliderMa.pressed ? 0 : 120 } }
-                            }
-                            Rectangle {
-                                x: Math.max(0, (track.width - 10) * Math.max(0, Math.min(1, modelData.volume / 100)))
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 10; height: 10; radius: 5
-                                color: modelData.muted ? Colors.color1 : root.accent
+                                id: track
+                                anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+                                height: (sliderMa.containsMouse || sliderMa.pressed) ? 7 : 4
+                                radius: height / 2
+                                color: Qt.lighter(Colors.background, 1.5)
+                                Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                Rectangle {
+                                    width: parent.width * Math.max(0, Math.min(1, modelData.volume / 100))
+                                    height: parent.height; radius: parent.radius
+                                    color: modelData.muted ? Colors.color1
+                                         : (sliderMa.containsMouse || sliderMa.pressed) ? Qt.lighter(root.accent, 1.15) : root.accent
+                                    Behavior on width { NumberAnimation { duration: sliderMa.pressed ? 0 : 220; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                }
                             }
                             MouseArea {
                                 id: sliderMa
-                                anchors.fill: parent; anchors.margins: -6
+                                anchors.fill: parent
+                                hoverEnabled: true
                                 function calc(mx) { return Math.max(0, Math.min(100, Math.round(mx / track.width * 100))) }
                                 onPressed: e => root.av.setVolume(modelData.id, calc(e.x))
                                 onPositionChanged: e => { if (pressed) root.av.setVolume(modelData.id, calc(e.x)) }

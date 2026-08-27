@@ -19,9 +19,9 @@ QtObject {
         onTextChanged: root._raw = root._watcher.text()
     }
     property Timer _colorPoll: Timer {
-        // fast fallback: FileView.watchChanges misses wallust's atomic rewrite,
-        // so poll often (tiny file; unchanged text is a no-op) for a snappy swap
-        interval: 500; running: true; repeat: true
+        // fallback only: WallpaperSection calls Colors.reload() the instant wallust
+        // finishes, so this just catches out-of-band changes (CLI wallust) slowly
+        interval: 2000; running: true; repeat: true
         onTriggered: {
             root._watcher.reload()
             const t = root._watcher.text()

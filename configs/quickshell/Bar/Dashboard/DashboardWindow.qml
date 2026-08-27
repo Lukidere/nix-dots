@@ -14,7 +14,7 @@ PanelWindow {
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: panel.activeTab === 1 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (panel.activeTab === 1 || panel.activeTab === 2) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
     // mask limits input to hover/panel rects - rest of screen click-through
     mask: Region {
@@ -131,9 +131,18 @@ PanelWindow {
             id: volPanelRect
             // narrow vertical pill, slides in from right edge with drop-shadow
             readonly property bool _open: DashboardState.volPanelScreen === root.modelData.name
+            // per-app mixer expands the pill leftwards; volPanelArea tracks our
+            // width so its keep-open/input mask grows with us automatically
+            property bool mixerOpen: false
+            on_OpenChanged: if (!_open) mixerOpen = false
+            onMixerOpenChanged: if (mixerOpen) AppVolState.refresh()
+            Timer {
+                interval: 2000; running: volPanelRect.mixerOpen; triggeredOnStart: true; repeat: true
+                onTriggered: AppVolState.refresh()
+            }
             anchors { verticalCenter: parent.verticalCenter }
             x: _open ? (parent.width - width - Space.xs) : parent.width - 4
-            width: 112
+            width: _open ? (mixerOpen ? 112 + 220 : 112) : 112
             height: 380
             radius: 16
             color: Qt.darker(Colors.background, 1.07)
@@ -143,21 +152,51 @@ PanelWindow {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Space.fast } }
             Behavior on x       { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on width   { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
 
-            Column {
+            // per-app mixer, revealed on the left when mixerOpen
+            AppMixer {
+                id: appMixer
                 anchors {
-                    top: parent.top; bottom: parent.bottom; left: parent.left; right: parent.right
+                    top: parent.top; bottom: parent.bottom; left: parent.left; right: ctlCol.left
                     topMargin: Space.md; bottomMargin: Space.md; leftMargin: Space.sm; rightMargin: Space.sm
                 }
+                visible: volPanelRect.mixerOpen && width > 20
+                opacity: volPanelRect.mixerOpen ? 1 : 0
+                clip: true
+                Behavior on opacity { NumberAnimation { duration: 160 } }
+            }
+
+            Column {
+                id: ctlCol
+                anchors {
+                    top: parent.top; bottom: parent.bottom; right: parent.right
+                    topMargin: Space.md; bottomMargin: Space.md; rightMargin: Space.sm
+                }
+                width: 96
                 spacing: Space.sm
 
-                // Mini header - tells the user what this panel is
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "VOL · BRT"
-                    font.family: Type.face; font.pixelSize: Type.xs
-                    color: Colors.color8
+                // Header doubles as the per-app mixer toggle (tap it)
+                Item {
+                    width: parent.width; height: 16
+                    Row {
+                        anchors.centerIn: parent; spacing: 5
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\u{F0234}"
+                            font.family: Type.face; font.pixelSize: Type.sm
+                            color: volPanelRect.mixerOpen ? Colors.color4 : Colors.color8
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "VOL · BRT"
+                            font.family: Type.face; font.pixelSize: Type.xs
+                            color: volPanelRect.mixerOpen ? Colors.color4 : Colors.color8
+                        }
+                    }
+                    MouseArea { anchors.fill: parent; anchors.margins: -4
+                        onClicked: volPanelRect.mixerOpen = !volPanelRect.mixerOpen }
                 }
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter

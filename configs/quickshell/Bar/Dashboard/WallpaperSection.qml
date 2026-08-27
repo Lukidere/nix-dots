@@ -42,6 +42,21 @@ Item {
         return ""
     }
 
+    // set a wallpaper: swap it via awww, then retheme via wallust (debounced)
+    function setWallpaper(path) {
+        awwwProc.command = ["awww", "img", path]
+        awwwProc.running = false; awwwProc.running = true
+        var themeName = root.wallustThemeName(path)
+        wallustDelayTimer.stop()
+        wallustProc.command = themeName ? ["wallust", "theme", themeName] : ["wallust", "run", path]
+        wallustDelayTimer.start()
+    }
+    // "Theme · Variation" label from the path
+    function wallName(path) {
+        var p = (path || "").split("/")
+        return p.length >= 3 ? (p[p.length - 3] + "  ·  " + p[p.length - 2]) : ""
+    }
+
     readonly property Process _listProc: Process {
         command: ["find", root.wallpaperRoot, "-maxdepth", "3", "-type", "f",
                   "(", "-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.webp", "-o", "-iname", "*.gif", ")"]
@@ -95,93 +110,94 @@ Item {
     Text {
         id: header
         anchors { left: parent.left; top: parent.top }
-        text: root.wallpapers.length + " wallpapers"
+        text: (carousel.currentIndex + 1) + " / " + root.wallpapers.length + "   ·   scroll or drag · click center to set"
         font.family: "Iosevka Nerd Font"; font.pixelSize: 10
         color: Colors.color6
     }
 
-    GridView {
-        id: gridView
-        anchors { left: parent.left; right: scrollBar.left; rightMargin: 4; top: header.bottom; bottom: parent.bottom; topMargin: 8 }
-        cellWidth: Math.floor((width - 8) / 3)
-        cellHeight: cellWidth * 0.625
+    // ── coverflow carousel: center wallpaper large, sides small + dimmed ──
+    PathView {
+        id: carousel
+        anchors { left: parent.left; right: parent.right; top: header.bottom; bottom: nameLabel.top; topMargin: 8; bottomMargin: 8 }
         model: root.wallpapers
+        pathItemCount: 7
+        snapMode: PathView.SnapOneItem
+        preferredHighlightBegin: 0.5
+        preferredHighlightEnd: 0.5
+        highlightRangeMode: PathView.StrictlyEnforceRange
+        highlightMoveDuration: 220
         clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        cacheBuffer: cellHeight * 2
+        dragMargin: height   // grab-drag anywhere in the strip
+        focus: true          // Enter sets the centered wallpaper
+        Keys.onReturnPressed: if (currentIndex >= 0) root.setWallpaper(root.wallpapers[currentIndex])
+        Keys.onEnterPressed:  if (currentIndex >= 0) root.setWallpaper(root.wallpapers[currentIndex])
+
+        path: Path {
+            startX: 0; startY: carousel.height / 2
+            PathAttribute { name: "iscale";   value: 0.55 }
+            PathAttribute { name: "iopacity"; value: 0.25 }
+            PathAttribute { name: "iz";       value: 0 }
+            PathLine { x: carousel.width / 2; y: carousel.height / 2 }
+            PathPercent { value: 0.5 }
+            PathAttribute { name: "iscale";   value: 1.0 }
+            PathAttribute { name: "iopacity"; value: 1.0 }
+            PathAttribute { name: "iz";       value: 100 }
+            PathLine { x: carousel.width; y: carousel.height / 2 }
+            PathAttribute { name: "iscale";   value: 0.55 }
+            PathAttribute { name: "iopacity"; value: 0.25 }
+            PathAttribute { name: "iz";       value: 0 }
+        }
 
         delegate: Item {
+            id: card
             required property string modelData
             required property int index
-            width: gridView.cellWidth
-            height: gridView.cellHeight
+            width: carousel.width * 0.46
+            height: width * 0.6
+            z: PathView.iz
+            scale: PathView.iscale
+            opacity: PathView.iopacity
+            Behavior on scale { NumberAnimation { duration: 120 } }
 
             Image {
                 id: thumbImg
                 anchors.fill: parent
-                source: "file://" + root.getCachedThumbPath(modelData)
-                sourceSize.width: 330
-                sourceSize.height: 540
+                source: "file://" + root.getCachedThumbPath(card.modelData)
+                sourceSize.width: 330; sourceSize.height: 540
                 fillMode: Image.PreserveAspectCrop
                 smooth: true; mipmap: true; asynchronous: true; clip: true
-                onStatusChanged: {
-                    if (status === Image.Error) {
-                        source = "file://" + modelData
-                    }
-                }
+                onStatusChanged: if (status === Image.Error) source = "file://" + card.modelData
             }
             Rectangle {
-                anchors.fill: parent; radius: 4; color: "transparent"
-                border.color: wMa.containsMouse ? Colors.color4 : "transparent"
-                border.width: 2
+                anchors.fill: parent; radius: 8; color: "transparent"
+                border.width: 3
+                border.color: card.PathView.isCurrentItem ? Colors.color4 : "transparent"
                 Behavior on border.color { ColorAnimation { duration: 150 } }
             }
             MouseArea {
-                id: wMa; anchors.fill: parent; hoverEnabled: true
+                anchors.fill: parent; hoverEnabled: true
                 onClicked: {
-                    awwwProc.command = ["awww", "img", modelData]
-                    awwwProc.running = false; awwwProc.running = true
-                    var themeName = root.wallustThemeName(modelData)
-                    wallustDelayTimer.stop()
-                    if (themeName) {
-                        wallustProc.command = ["wallust", "theme", themeName]
-                    } else {
-                        wallustProc.command = ["wallust", "run", modelData]
-                    }
-                    wallustDelayTimer.start()
+                    carousel.currentIndex = card.index
+                    root.setWallpaper(card.modelData)
                 }
             }
         }
+
     }
 
-    // Interactive scrollbar
-    Rectangle {
-        id: scrollBar
-        width: 6; radius: 3
-        anchors { right: parent.right; top: gridView.top; bottom: gridView.bottom }
-        color: Qt.lighter(Colors.background, 1.3)
-        visible: gridView.contentHeight > gridView.height
+    // wheel-scroll overlay: NoButton so clicks still reach the cards below
+    MouseArea {
+        anchors.fill: carousel
+        acceptedButtons: Qt.NoButton
+        onWheel: e => { if (e.angleDelta.y < 0) carousel.incrementCurrentIndex()
+                        else carousel.decrementCurrentIndex() }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            onPressed: function(mouse) {
-                var ratio = Math.max(0, Math.min(1, mouse.y / scrollBar.height))
-                gridView.contentY = ratio * (gridView.contentHeight - gridView.height)
-            }
-            onPositionChanged: function(mouse) {
-                if (pressed) {
-                    var ratio = Math.max(0, Math.min(1, mouse.y / scrollBar.height))
-                    gridView.contentY = ratio * (gridView.contentHeight - gridView.height)
-                }
-            }
-        }
-
-        Rectangle {
-            width: 6; radius: 3; color: Colors.color4
-            height: Math.max(16, scrollBar.height * gridView.height / Math.max(1, gridView.contentHeight))
-            y: gridView.contentHeight > gridView.height
-             ? (scrollBar.height - height) * gridView.contentY / (gridView.contentHeight - gridView.height)
-             : 0
-        }
+    Text {
+        id: nameLabel
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 4 }
+        text: root.wallName(root.wallpapers[carousel.currentIndex] || "")
+        font.family: "Iosevka Nerd Font"; font.pixelSize: 12; font.bold: true
+        color: Colors.foreground
     }
 }

@@ -1,4 +1,5 @@
-spawn-at-startup "awww-daemon"
+// awww-daemon runs as a systemd user service (home.nix) so it auto-restarts
+// if it dies - a dead daemon silently shows a black wallpaper
 // Lock handling: `lock` fires on loginctl lock-session (lid-close when docked, manual bind),
 // `before-sleep` locks ahead of suspend so lid-open lands on gtklock.
 // pidof guard: don't stack a second gtklock when both events fire.

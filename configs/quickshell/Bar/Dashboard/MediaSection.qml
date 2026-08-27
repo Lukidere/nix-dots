@@ -9,11 +9,15 @@ Item {
     // Accent injected by DashboardWindow (per-tab color)
     property color accent: Colors.color4
 
-    // Art: prefer mpv's mpris artUrl, fall back to the queued track's cover
+    // Art: prefer mpv's mpris artUrl, fall back to the queued track's cover.
+    // Resolve from the stable queue first so searching (which swaps yt.songs)
+    // never drops the now-playing cover.
     readonly property string _queueCover: {
         if (yt.nowId === "") return ""
-        const t = yt.songs.find(x => x.id === yt.nowId)
-        return t ? t.cover : ""
+        const inQ = (yt.queue || []).find(x => x.id === yt.nowId)
+        if (inQ) return inQ.cover
+        const inS = yt.songs.find(x => x.id === yt.nowId)
+        return inS ? inS.cover : ""
     }
     readonly property string _art: yt.mpvArt !== "" ? yt.mpvArt : _queueCover
     // Exposed for ambient-art consumers in DashboardWindow
@@ -228,10 +232,10 @@ Item {
             Row {
                 width: parent.width; spacing: 4
                 Repeater {
-                    model: [{k: "search", l: "Search"}, {k: "playlists", l: "Playlists"}, {k: "liked", l: "Liked"}]
+                    model: [{k: "search", l: "Search"}, {k: "queue", l: "Queue"}, {k: "playlists", l: "Playlists"}, {k: "liked", l: "Liked"}]
                     delegate: Rectangle {
                         required property var modelData
-                        width: (parent.width - 8) / 3; height: 24; radius: 6
+                        width: (parent.width - 12) / 4; height: 24; radius: 6
                         color: root.ytBrowse === modelData.k ? root.accent
                              : catMa.containsMouse ? Qt.lighter(Colors.background, 1.5)
                              : Qt.lighter(Colors.background, 1.3)
@@ -248,6 +252,7 @@ Item {
                                 root.ytView = "browse"
                                 if (modelData.k === "playlists") yt.getPlaylists()
                                 else if (modelData.k === "liked") { yt.getLiked(); root.ytView = "tracks" }
+                                else if (modelData.k === "queue") root.ytView = "tracks"
                                 else ytSearchInput.forceActiveFocus()
                             }
                         }
@@ -267,7 +272,13 @@ Item {
                     verticalAlignment: TextInput.AlignVCenter
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 11
                     color: Colors.foreground; clip: true
-                    onAccepted: { yt.search(text); root.ytView = "tracks" }
+                    // launcher feel: results update as you type (debounced)
+                    onTextChanged: _searchDebounce.restart()
+                    onAccepted: { _searchDebounce.stop(); yt.search(text); root.ytView = "tracks" }
+                }
+                Timer {
+                    id: _searchDebounce; interval: 320
+                    onTriggered: if (ytSearchInput.text.trim() !== "") { yt.search(ytSearchInput.text); root.ytView = "tracks" }
                 }
                 Text {
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -315,9 +326,10 @@ Item {
                         }
                     }
 
-                    // Track list (search results, playlist tracks, liked)
+                    // Track list (search results, playlist tracks, liked, queue)
                     Repeater {
-                        model: (root.ytBrowse === "search" || root.ytView === "tracks") ? yt.songs : []
+                        model: root.ytBrowse === "queue" ? yt.queue
+                             : ((root.ytBrowse === "search" || root.ytView === "tracks") ? yt.songs : [])
                         delegate: Rectangle {
                             required property var modelData
                             required property int index
@@ -326,7 +338,7 @@ Item {
                                  : songMa.containsMouse ? Qt.lighter(Colors.background, 1.4) : "transparent"
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Row {
-                                anchors { fill: parent; leftMargin: 8; rightMargin: 40 }
+                                anchors { fill: parent; leftMargin: 8; rightMargin: 58 }
                                 spacing: 8
                                 Image {
                                     width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter
@@ -340,12 +352,32 @@ Item {
                                 }
                             }
                             Text {
-                                anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                anchors { right: parent.right; rightMargin: 30; verticalCenter: parent.verticalCenter }
                                 text: root.fmtTime(modelData.duration)
                                 font.family: "Iosevka Nerd Font"; font.pixelSize: 9; color: Colors.color8
                             }
-                            MouseArea { id: songMa; anchors.fill: parent; hoverEnabled: true
-                                onClicked: yt.playQueue(yt.songs, index)
+                            // add-to-queue button
+                            Rectangle {
+                                anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                                width: 22; height: 22; radius: 11
+                                visible: root.ytBrowse !== "queue"
+                                color: addMa.containsMouse ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.3) : "transparent"
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Text {
+                                    anchors.centerIn: parent; text: "\u{F0415}"
+                                    font.family: "Iosevka Nerd Font"; font.pixelSize: 13
+                                    color: addMa.containsMouse ? root.accent : Colors.color8
+                                }
+                                MouseArea { id: addMa; anchors.fill: parent; hoverEnabled: true
+                                    onClicked: yt.enqueue(modelData) }
+                            }
+                            MouseArea { id: songMa; anchors.fill: parent; anchors.rightMargin: 28; hoverEnabled: true
+                                // search: play just this song (build the queue with +);
+                                // playlists/liked/queue: play the whole list from here
+                                onClicked: {
+                                    if (root.ytBrowse === "search") yt.playQueue([modelData], 0)
+                                    else yt.playQueue(root.ytBrowse === "queue" ? yt.queue : yt.songs, index)
+                                }
                             }
                         }
                     }

@@ -36,7 +36,7 @@ Item {
 
     readonly property Process _audioProc: Process {
         command: ["sh","-c","wpctl get-volume @DEFAULT_AUDIO_SINK@ && sh \"$HOME/.config/quickshell/scripts/qs-micmute.sh\" status"]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 if (root._lockAudio) return
@@ -50,7 +50,10 @@ Item {
             }
         }
     }
-    Timer { interval: 2000; running: true; repeat: true
+    // only poll while this screen's volume panel is open - the audio read spawns
+    // wpctl + a pw-dump (mic mute), so running it 24/7 per screen is wasteful
+    readonly property bool _panelOpen: DashboardState.volPanelScreen === root.screenName
+    Timer { interval: 2000; running: root._panelOpen; triggeredOnStart: true; repeat: true
             onTriggered: { root._audioProc.running=false; root._audioProc.running=true } }
 
     readonly property Process _brightProc: Process {
@@ -63,8 +66,8 @@ Item {
             }
         }
     }
-    // only the laptop panel polls brightnessctl; external monitors read via ddcutil
-    Timer { interval: 3000; running: root._isInternal; repeat: true
+    // only the laptop panel polls brightnessctl, and only while the panel is open
+    Timer { interval: 3000; running: root._isInternal && root._panelOpen; triggeredOnStart: true; repeat: true
             onTriggered: { root._brightProc.running=false; root._brightProc.running=true } }
 
     Process { id: _volSet;     running: false }
