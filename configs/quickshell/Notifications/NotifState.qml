@@ -38,6 +38,7 @@ QtObject {
                 id:        notif.id,
                 appName:   notif.appName  || "Notification",
                 appIcon:   notif.appIcon  || "",
+                image:     notif.image    || "",
                 summary:   notif.summary  || "",
                 body:      notif.body     || "",
                 timeout:   (notif.expireTimeout > 0) ? notif.expireTimeout : 5000,

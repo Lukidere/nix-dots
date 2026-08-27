@@ -6,7 +6,18 @@ Rectangle {
     property int    notifId:   0
     property string appName:   ""
     property string appIcon:   ""
+    property string image:     ""
     property string summary:   ""
+
+    // niri's screenshot notification already carries the shot as appIcon (a ready
+    // file:// url). Use any url as-is; only bare filesystem paths need file://.
+    readonly property string _imgSrc: {
+        const p = root.image !== "" ? root.image
+                : (root.appIcon.includes("/") ? root.appIcon : "")
+        if (p === "") return ""
+        if (p.includes("://")) return p
+        return "file://" + encodeURI(p)
+    }
     property string body:      ""
     property int    timeout:   5000
     property real   createdAt: Date.now()
@@ -74,19 +85,31 @@ Rectangle {
         onTriggered: NotifState.remove(root.notifId)
     }
 
-    // App icon
+    // App icon (a wider thumbnail for screenshot notifications)
     Item {
         id: iconImg
         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-        width: 28; height: 28
+        readonly property bool _shot: root.appIcon.includes("/Screenshots/") || /screenshot/i.test(root.summary)
+        width:  _shot ? 58 : 28
+        height: _shot ? 40 : 28
+        clip: true
 
         Image {
             id: _iconImage
             anchors.fill: parent
-            source: root.appIcon && root.appIcon.includes("/") ? "file://" + root.appIcon : ""
-            fillMode: Image.PreserveAspectFit
-            smooth: true
+            source: root._imgSrc
+            fillMode: iconImg._shot ? Image.PreserveAspectCrop : Image.PreserveAspectFit
+            sourceSize.width: iconImg._shot ? 232 : 56
+            sourceSize.height: iconImg._shot ? 160 : 56
+            smooth: true; mipmap: true; asynchronous: true
             visible: status === Image.Ready
+        }
+        Rectangle {
+            visible: iconImg._shot && _iconImage.visible
+            anchors.fill: parent
+            color: "transparent"; radius: 5
+            border.width: 1
+            border.color: Qt.rgba(Colors.color4.r, Colors.color4.g, Colors.color4.b, 0.4)
         }
         Text {
             anchors.centerIn: parent

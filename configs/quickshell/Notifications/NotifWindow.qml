@@ -39,6 +39,7 @@ PanelWindow {
                 notifId:   modelData.id
                 appName:   modelData.appName
                 appIcon:   modelData.appIcon
+                image:     modelData.image || ""
                 summary:   modelData.summary
                 body:      modelData.body
                 timeout:   modelData.timeout
