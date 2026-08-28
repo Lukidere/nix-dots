@@ -349,14 +349,6 @@ in
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
 
-  nixpkgs.overlays = [
-    (self: super: {
-      renoise = super.renoise.override {
-        releasePath = /home/dhm/Renoise_3_5_4_Demo_Linux_x86_64.tar.gz;
-      };
-    })
-  ];
-
   # Discord rich presence for the dashboard's music (mpv MPRIS -> Discord IPC).
   # NOT auto-started - toggle it from the music tab or with systemctl. Needs
   # Vesktop's Rich Presence enabled and a Discord app id in ~/.config/qs-discord-rpc/app_id.

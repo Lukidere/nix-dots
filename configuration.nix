@@ -24,6 +24,15 @@ in
   # 1. Nix & Nixpkgs Settings
   # ==========================================
   nixpkgs.config.allowUnfree = true;
+  # System-level overlays (home-manager useGlobalPkgs shares these, so they must
+  # live here, not in home.nix). Renoise: point at the downloaded demo tarball.
+  nixpkgs.overlays = [
+    (self: super: {
+      renoise = super.renoise.override {
+        releasePath = /home/dhm/Renoise_3_5_4_Demo_Linux_x86_64.tar.gz;
+      };
+    })
+  ];
   age.secrets."haslo-user".file = ./configs/secrets/haslo-user.age;
   nix = {
     settings = {
@@ -75,7 +84,9 @@ in
 
     };
     blacklistedKernelModules = [ "nouveau" ];
-    kernelPackages = pkgs.linuxPackages_latest;
+    # pinned off linuxPackages_latest (7.2) - nvidia-open 595 fails to build there
+    # (strncpy implicit-decl). Bump back to _latest once nvidia supports 7.2.
+    kernelPackages = pkgs.linuxPackages_7_1;
   };
   # ==========================================
   # 3. Hardware & Graphics (NVIDIA)
