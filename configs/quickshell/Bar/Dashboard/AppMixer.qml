@@ -34,6 +34,8 @@ Item {
             height: parent.height - 20
             contentHeight: rows.implicitHeight; clip: true
             boundsBehavior: Flickable.StopAtBounds
+            // vertical-only so horizontal slider drags are never stolen for a flick
+            flickableDirection: Flickable.VerticalFlick
 
             Column {
                 id: rows
@@ -76,32 +78,54 @@ Item {
                             color: Colors.color6
                         }
 
-                        // dynamic slider (music-tab feel): thin pill, grows and
-                        // brightens on hover, fill glides smoothly, instant on drag
+                        // horizontal take on the main VSlider: thin accent-filled
+                        // track with a round thumb that follows the value; track
+                        // thickens + thumb grows on hover, fill glides, instant on drag
                         Item {
+                            id: sld
                             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                            height: 12
+                            height: 14
+                            readonly property real frac: Math.max(0, Math.min(1, modelData.volume / 100))
+                            readonly property bool active: sliderMa.containsMouse || sliderMa.pressed
+                            readonly property color fillColor: modelData.muted ? Colors.color1
+                                : sld.active ? Qt.lighter(root.accent, 1.15) : root.accent
+
                             Rectangle {
                                 id: track
                                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
-                                height: (sliderMa.containsMouse || sliderMa.pressed) ? 7 : 4
+                                height: sld.active ? 7 : 4
                                 radius: height / 2
                                 color: Qt.lighter(Colors.background, 1.5)
                                 Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                                 Rectangle {
-                                    width: parent.width * Math.max(0, Math.min(1, modelData.volume / 100))
+                                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                                    width: parent.width * sld.frac
                                     height: parent.height; radius: parent.radius
-                                    color: modelData.muted ? Colors.color1
-                                         : (sliderMa.containsMouse || sliderMa.pressed) ? Qt.lighter(root.accent, 1.15) : root.accent
+                                    color: sld.fillColor
                                     Behavior on width { NumberAnimation { duration: sliderMa.pressed ? 0 : 220; easing.type: Easing.OutCubic } }
                                     Behavior on color { ColorAnimation { duration: 150 } }
                                 }
+                            }
+                            // round thumb, mirrors the VSlider handle
+                            Rectangle {
+                                readonly property int sz: sld.active ? 14 : 11
+                                width: sz; height: sz; radius: sz / 2
+                                y: (sld.height - sz) / 2
+                                x: Math.max(0, Math.min(sld.width - sz, sld.width * sld.frac - sz / 2))
+                                color: sld.fillColor
+                                Behavior on x      { NumberAnimation { duration: sliderMa.pressed ? 0 : 220; easing.type: Easing.OutCubic } }
+                                Behavior on width  { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                Behavior on color  { ColorAnimation { duration: 150 } }
                             }
                             MouseArea {
                                 id: sliderMa
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                function calc(mx) { return Math.max(0, Math.min(100, Math.round(mx / track.width * 100))) }
+                                // stop the enclosing Flickable from stealing the
+                                // drag gesture, otherwise only the initial click lands
+                                preventStealing: true
+                                function calc(mx) { return Math.max(0, Math.min(100, Math.round(mx / sld.width * 100))) }
                                 onPressed: e => root.av.setVolume(modelData.id, calc(e.x))
                                 onPositionChanged: e => { if (pressed) root.av.setVolume(modelData.id, calc(e.x)) }
                             }
