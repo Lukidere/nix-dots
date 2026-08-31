@@ -280,6 +280,12 @@ PanelWindow {
         if (["pdf"].includes(ext))                                        return Colors.color1
         return Colors.foreground
     }
+    // raster image? (symlinks allowed - wallpapers deploy as store symlinks)
+    function isImage(item) {
+        if (item.isDir) return false
+        const ext = item.name.toLowerCase().split(".").pop()
+        return ["png", "jpg", "jpeg", "gif", "webp", "bmp"].includes(ext)
+    }
     function formatSize(bytes, isDir) {
         if (isDir) return "-"
         if (bytes <= 0) return "0 B"
@@ -691,10 +697,26 @@ PanelWindow {
                                 Row {
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                                     spacing: 8
-                                    Text {
-                                        text: root.fileIcon(modelData)
-                                        font.family: "Iosevka Nerd Font"; font.pixelSize: 14
-                                        color: root.fileIconColor(modelData); width: 18
+                                    // image files get a small thumbnail, everything
+                                    // else keeps its nerd-font glyph
+                                    Item {
+                                        width: 18; height: 30
+                                        Image {
+                                            visible: root.isImage(modelData)
+                                            anchors.centerIn: parent
+                                            width: 22; height: 22
+                                            source: visible ? "file://" + root.currentPath + "/" + modelData.name : ""
+                                            sourceSize.width: 44; sourceSize.height: 44
+                                            fillMode: Image.PreserveAspectCrop
+                                            asynchronous: true; cache: true; clip: true; smooth: true; mipmap: true
+                                        }
+                                        Text {
+                                            visible: !root.isImage(modelData)
+                                            anchors.centerIn: parent
+                                            text: root.fileIcon(modelData)
+                                            font.family: "Iosevka Nerd Font"; font.pixelSize: 14
+                                            color: root.fileIconColor(modelData)
+                                        }
                                     }
                                     Text {
                                         visible: root.renamingFile !== modelData.name
