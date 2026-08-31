@@ -64,8 +64,9 @@ Item {
     function wallustPaletteFor(path) {
         var parts = path.split("/")
         var theme = (parts[parts.length - 3] || "").toLowerCase()
-        var variation = (parts[parts.length - 2] || "").toLowerCase()
-        if (theme === "purple" && variation === "light") return "softdark"
+        // Purple (both variations) uses softdark for the vivid violet look; Indigo
+        // holds the same images but stays image-derived for a deep indigo bg
+        if (theme === "purple") return "softdark"
         return ""
     }
     // "Theme · Variation" label from the path
