@@ -48,8 +48,25 @@ Item {
         awwwProc.running = false; awwwProc.running = true
         var themeName = root.wallustThemeName(path)
         wallustDelayTimer.stop()
-        wallustProc.command = themeName ? ["wallust", "theme", themeName] : ["wallust", "run", path]
+        if (themeName) {
+            wallustProc.command = ["wallust", "theme", themeName]
+        } else {
+            // unmapped folders derive the palette from the image; some pin a
+            // wallust palette scheme (Purple/Light -> softdark, the purple look)
+            var pal = root.wallustPaletteFor(path)
+            wallustProc.command = pal
+                ? ["wallust", "run", path, "--palette", pal]
+                : ["wallust", "run", path]
+        }
         wallustDelayTimer.start()
+    }
+    // per-folder wallust palette scheme override for image-derived themes
+    function wallustPaletteFor(path) {
+        var parts = path.split("/")
+        var theme = (parts[parts.length - 3] || "").toLowerCase()
+        var variation = (parts[parts.length - 2] || "").toLowerCase()
+        if (theme === "purple" && variation === "light") return "softdark"
+        return ""
     }
     // "Theme · Variation" label from the path
     function wallName(path) {
