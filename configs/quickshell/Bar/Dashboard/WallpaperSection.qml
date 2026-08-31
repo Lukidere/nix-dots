@@ -102,8 +102,14 @@ Item {
         }
     }
 
-    // reload the palette the instant wallust finishes writing colors.json
-    Process { id: wallustProc; running: false; onExited: Colors.reload() }
+    // after wallust: run the contrast fixer (readable accents on softdark-style
+    // palettes, patches colors.json + ghostty), then reload the live palette
+    Process { id: wallustProc; running: false; onExited: contrastProc.running = true }
+    Process {
+        id: contrastProc; running: false
+        command: ["python3", root._home + "/.config/quickshell/scripts/qs-contrast.py"]
+        onExited: Colors.reload()
+    }
     Process { id: awwwProc; running: false }
     Timer { id: wallustDelayTimer; interval: 150; repeat: false; onTriggered: wallustProc.running = true }
 
