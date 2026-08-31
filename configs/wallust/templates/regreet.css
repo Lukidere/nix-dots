@@ -1,0 +1,54 @@
+/* Rendered by wallust per wallpaper. Synced to /var/lib/regreet/regreet.css by
+   the regreet-wallust systemd path unit, then @import'd by the greeter's css.
+   Mirrors gtklock.css so the login screen tracks the same palette as the lock. */
+window {
+    background-color: rgba({{color0 | red}}, {{color0 | green}}, {{color0 | blue}}, 0.92);
+    color: {{foreground}};
+}
+
+label {
+    color: {{foreground}};
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+entry {
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-family: "Iosevka Nerd Font", monospace;
+    background-color: alpha({{background}}, 0.6);
+    color: {{foreground}};
+    border: 2px solid alpha({{color4}}, 0.4);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    caret-color: {{color4}};
+    transition: all 200ms ease;
+}
+
+entry:focus-within {
+    border-color: {{color4}};
+    box-shadow: 0 0 0 3px alpha({{color4}}, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+    background-color: alpha({{background}}, 0.8);
+}
+
+button {
+    border-radius: 12px;
+    padding: 10px 32px;
+    background-image: none;
+    background-color: alpha({{color4}}, 0.2);
+    color: {{color4}};
+    border: 1px solid alpha({{color4}}, 0.3);
+    transition: all 200ms ease;
+}
+
+button:hover {
+    background-color: alpha({{color4}}, 0.35);
+    border-color: {{color4}};
+}
+
+button:active {
+    background-color: alpha({{color4}}, 0.5);
+}
+
+combobox button, dropdown button {
+    padding: 6px 12px;
+}

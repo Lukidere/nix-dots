@@ -24,15 +24,9 @@ in
   # 1. Nix & Nixpkgs Settings
   # ==========================================
   nixpkgs.config.allowUnfree = true;
-  # System-level overlays (home-manager useGlobalPkgs shares these, so they must
-  # live here, not in home.nix). Renoise: point at the downloaded demo tarball.
-  nixpkgs.overlays = [
-    (self: super: {
-      renoise = super.renoise.override {
-        releasePath = /home/dhm/Renoise_3_5_4_Demo_Linux_x86_64.tar.gz;
-      };
-    })
-  ];
+  # No renoise overlay: nixpkgs already fetchurl's the 3.5.4 demo tarball (the same
+  # file we used to point releasePath at), so the default package builds under pure
+  # eval with no local tarball. Re-add an override only for the registered release.
   age.secrets."haslo-user".file = ./configs/secrets/haslo-user.age;
   nix = {
     settings = {
@@ -150,6 +144,12 @@ in
   # ==========================================
   programs.niri.enable = true;
 
+  # seatd daemon gives libseat (cage/greetd, niri) a dedicated seat backend so it
+  # does not race the logind/DRM readiness at boot. Fixes greeter failing with
+  # "libseat: could not find a backend" on the first boot after a system switch,
+  # when the nvidia module loads late (~90s) and cage starts before DRM is ready.
+  services.seatd.enable = true;
+
   # GTK greeter (regreet) - themed login matching the Rosé Pine dots
   programs.regreet = {
     enable = true;
@@ -174,52 +174,33 @@ in
         ];
       };
     };
-    # Mirrors the gtklock lock-screen look (wallust rose-pine template)
+    # The module bakes this to an immutable /etc/greetd/regreet.css, so it only
+    # @imports the live file that wallust drives (see regreet-wallust below). This
+    # makes the login screen track the wallpaper palette exactly like gtklock.
     extraCss = ''
-      window {
-        background-color: rgb(38, 35, 58);
-        color: #e0def4;
-      }
-      label {
-        color: #e0def4;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-      }
-      entry {
-        border-radius: 12px;
-        padding: 12px 20px;
-        font-size: 16px;
-        background-color: alpha(#191724, 0.6);
-        color: #e0def4;
-        border: 2px solid alpha(#31748f, 0.4);
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-        caret-color: #31748f;
-        transition: all 200ms ease;
-      }
-      entry:focus-within {
-        border-color: #31748f;
-        box-shadow: 0 0 0 3px alpha(#31748f, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
-        background-color: alpha(#191724, 0.8);
-      }
-      button {
-        border-radius: 12px;
-        padding: 10px 32px;
-        background-image: none;
-        background-color: alpha(#31748f, 0.2);
-        color: #31748f;
-        border: 1px solid alpha(#31748f, 0.3);
-        transition: all 200ms ease;
-      }
-      button:hover {
-        background-color: alpha(#31748f, 0.35);
-        border-color: #31748f;
-      }
-      button:active {
-        background-color: alpha(#31748f, 0.5);
-      }
-      combobox button, dropdown button {
-        padding: 6px 12px;
-      }
+      @import url("file:///var/lib/regreet/regreet.css");
     '';
+  };
+
+  # Dynamic greeter theming: wallust renders ~/.cache/wallust/regreet.css per
+  # wallpaper; this path unit mirrors it (as root) to a world-readable file the
+  # greeter user can @import. /var persists, so the last palette carries to boot.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/regreet 0755 root root -"
+    "C /var/lib/regreet/regreet.css 0644 root root - ${./configs/regreet/regreet.css}"
+  ];
+  systemd.paths.regreet-wallust = {
+    wantedBy = [ "multi-user.target" ];
+    pathConfig = {
+      PathChanged = "/home/dhm/.cache/wallust/regreet.css";
+      Unit = "regreet-wallust.service";
+    };
+  };
+  systemd.services.regreet-wallust = {
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.coreutils}/bin/install -D -m 0644 /home/dhm/.cache/wallust/regreet.css /var/lib/regreet/regreet.css";
+    };
   };
 
   xdg.portal = {

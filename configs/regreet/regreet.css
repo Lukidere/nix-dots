@@ -1,0 +1,54 @@
+/* Seed for /var/lib/regreet/regreet.css (tmpfiles copies this once). Overwritten
+   live by the regreet-wallust path unit from wallust's per-wallpaper render.
+   Static Rose Pine so the very first boot after deploy still looks right. */
+window {
+    background-color: rgba(25, 23, 36, 0.92);
+    color: #e0def4;
+}
+
+label {
+    color: #e0def4;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+entry {
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-family: "Iosevka Nerd Font", monospace;
+    background-color: alpha(#191724, 0.6);
+    color: #e0def4;
+    border: 2px solid alpha(#31748f, 0.4);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    caret-color: #31748f;
+    transition: all 200ms ease;
+}
+
+entry:focus-within {
+    border-color: #31748f;
+    box-shadow: 0 0 0 3px alpha(#31748f, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+    background-color: alpha(#191724, 0.8);
+}
+
+button {
+    border-radius: 12px;
+    padding: 10px 32px;
+    background-image: none;
+    background-color: alpha(#31748f, 0.2);
+    color: #31748f;
+    border: 1px solid alpha(#31748f, 0.3);
+    transition: all 200ms ease;
+}
+
+button:hover {
+    background-color: alpha(#31748f, 0.35);
+    border-color: #31748f;
+}
+
+button:active {
+    background-color: alpha(#31748f, 0.5);
+}
+
+combobox button, dropdown button {
+    padding: 6px 12px;
+}

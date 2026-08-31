@@ -48,6 +48,7 @@ check_contrast = true
 ghostty = { template = "ghostty.conf", target = "~/.config/ghostty/config" }
 
 gtklock = { template = "gtklock.css", target = "~/.cache/wallust/gtklock.css"}
+regreet = { template = "regreet.css", target = "~/.cache/wallust/regreet.css"}
 quickshell = {src = 'colors.json', dst = '~/.cache/wallust/colors.json' }
 
 neopywal = { src = 'neopywal.vim', dst = '~/.cache/wal/colors-wal.vim' }
