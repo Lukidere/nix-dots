@@ -83,7 +83,17 @@ Item {
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
-                root.wallpapers = this.text.trim().split("\n").filter(Boolean).sort()
+                // dedup same-image entries that differ only by extension: the
+                // legacy ~/.config/wallpapers submodule ships .png files while
+                // home-manager overlays .jpg symlinks, so each showed twice.
+                // Keep the first per dir+stem (sorted -> .jpg wins over .png)
+                var all = this.text.trim().split("\n").filter(Boolean).sort()
+                var seen = {}, out = []
+                for (var i = 0; i < all.length; i++) {
+                    var key = all[i].replace(/\.[^./]+$/, "")
+                    if (!seen[key]) { seen[key] = true; out.push(all[i]) }
+                }
+                root.wallpapers = out
             }
         }
     }
