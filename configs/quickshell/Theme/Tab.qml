@@ -12,13 +12,14 @@ QtObject {
             Colors.color3,   // 3 Inbox - yellow
             Colors.color1,   // 4 System - red
             Colors.color6,   // 5 Mail - teal
-            Colors.color2    // 6 News - green
+            Colors.color2,   // 6 News - green
+            Colors.color7    // 7 Settings - subtle
         ][i] || Colors.color4
     }
     function name(i) {
-        return ["CONTROLS", "MEDIA", "WALLPAPERS", "INBOX", "SYSTEM", "MAIL", "NEWS"][i] || ""
+        return ["CONTROLS", "MEDIA", "WALLPAPERS", "INBOX", "SYSTEM", "MAIL", "NEWS", "SETTINGS"][i] || ""
     }
     function icon(i) {
-        return ["", "", "", "", "", "\uF0E0", "\uF09E"][i] || ""
+        return ["", "", "", "", "", "\uF0E0", "\uF09E", "\uF013"][i] || ""
     }
 }

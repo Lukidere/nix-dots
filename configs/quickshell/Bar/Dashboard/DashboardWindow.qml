@@ -14,7 +14,9 @@ PanelWindow {
     color: "transparent"
     anchors { left: true; top: true; bottom: true; right: true }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: (panel.activeTab === 1 || panel.activeTab === 2) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    // tabs 1/2 (media/wallpapers) and 7 (settings: keybind search + hex field) need
+    // keyboard focus so their TextInputs receive typed keys
+    WlrLayershell.keyboardFocus: (panel.activeTab === 1 || panel.activeTab === 2 || panel.activeTab === 7) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusiveZone: -1
     // mask limits input to hover/panel rects - rest of screen click-through
     mask: Region {
@@ -431,7 +433,7 @@ PanelWindow {
                     leftMargin: Space.sm; topMargin: Space.md; bottomMargin: Space.md
                 }
                 width: 56
-                readonly property int slotH: Math.floor(height / 7)
+                readonly property int slotH: Math.floor(height / 8)
 
                 // Animated active indicator
                 Rectangle {
@@ -444,7 +446,7 @@ PanelWindow {
                 }
 
                 Repeater {
-                    model: 7
+                    model: 8
                     delegate: Item {
                         id: railSlot
                         required property int index
@@ -510,6 +512,7 @@ PanelWindow {
                 Timer { interval: 2000; running: true; onTriggered: tab4._loaded = true }
                 Timer { interval: 2800; running: true; onTriggered: tab5._loaded = true }
                 Timer { interval: 3600; running: true; onTriggered: tab6._loaded = true }
+                Timer { interval: 4400; running: true; onTriggered: tab7._loaded = true }
 
                 // Tab 0 - Controls
                 Item {
@@ -674,6 +677,33 @@ PanelWindow {
                                 RssSection {
                                     width: tab6.width
                                     height: tab6.height - 36 - Space.sm
+                                    accent: panel.accent
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Tab 7 - Settings (lazy-loaded)
+                Item {
+                    id: tab7
+                    anchors.fill: parent
+                    opacity: panel.activeTab === 7 ? 1 : 0
+                    visible: opacity > 0
+                    clip: true
+                    Behavior on opacity { NumberAnimation { duration: Space.fast; easing.type: Easing.OutCubic } }
+                    property bool _loaded: false
+                    onOpacityChanged: if (opacity > 0 && !_loaded) _loaded = true
+                    Loader {
+                        anchors.fill: parent
+                        active: tab7._loaded
+                        sourceComponent: Component {
+                            Column {
+                                spacing: Space.sm
+                                SectionHead { label: "SETTINGS"; ico: Tab.icon(7); accent: panel.accent }
+                                SettingsSection {
+                                    width: tab7.width
+                                    height: tab7.height - 36 - Space.sm
                                     accent: panel.accent
                                 }
                             }

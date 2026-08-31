@@ -130,14 +130,19 @@ Item {
             _ddcTimer.restart()
         }
     }
-    Process { id: _eyeOn;      command: ["sh", "-c", "gammastep &"]; running: false }
-    Process { id: _eyeOff;     command: ["sh","-c", "pkill -f [g]ammastep"]; running: false }
+    // night-light via gammastep DRM backend: the wayland backend reports "zero
+    // outputs support gamma adjustment" on this niri+nvidia box, drm works. -O is
+    // oneshot (sets tint, exits), -x resets. Temp comes from the Settings tab.
+    Process { id: _eyeOn;      command: ["sh", "-c", "gammastep -m drm -O " + SettingsState.nightTemp + " >/dev/null 2>&1"]; running: false }
+    Process { id: _eyeOff;     command: ["sh","-c", "pkill -f gammastep >/dev/null 2>&1; gammastep -m drm -x >/dev/null 2>&1"]; running: false }
 
     // auto night mode - on 18:00–06:00, off otherwise. Respects manual override (_lockEye).
     function _autoNight() {
         if (root._lockEye) return
         const h = new Date().getHours()
-        const shouldBeOn = (h >= 18 || h < 6)
+        const s = SettingsState.nightStart, e = SettingsState.nightEnd
+        // window may wrap past midnight (start > end), e.g. 18 -> 6
+        const shouldBeOn = s <= e ? (h >= s && h < e) : (h >= s || h < e)
         if (shouldBeOn && !root.eyeHealth) {
             root.eyeHealth = true
             _eyeOn.running = false; _eyeOn.running = true
@@ -152,7 +157,9 @@ Item {
         command: ["sh", "-c", "pgrep -f '[g]ammastep'"]
         running: true
         stdout: StdioCollector {
-            onStreamFinished: { if (!root._lockEye) root.eyeHealth = this.text.trim() !== "" }
+            // only force ON when gammastep is found; the -O tint exits so absence
+            // is not proof it is off (avoids fighting a persisted manual tint)
+            onStreamFinished: { if (!root._lockEye && this.text.trim() !== "") root.eyeHealth = true }
         }
     }
     Timer { interval: 5000; running: true; repeat: true

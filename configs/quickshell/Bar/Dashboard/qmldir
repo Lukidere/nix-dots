@@ -19,3 +19,6 @@ singleton AppVolState 1.0 AppVolState.qml
 MailSection 1.0 MailSection.qml
 RssSection 1.0 RssSection.qml
 AppMixer 1.0 AppMixer.qml
+SettingsSection 1.0 SettingsSection.qml
+PaletteEditor 1.0 PaletteEditor.qml
+singleton SettingsState 1.0 SettingsState.qml
