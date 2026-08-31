@@ -58,7 +58,9 @@ Item {
     }
 
     readonly property Process _listProc: Process {
-        command: ["find", root.wallpaperRoot, "-maxdepth", "3", "-type", "f",
+        // -L follows symlinks: home-manager deploys wallpapers as store symlinks,
+        // which a plain `-type f` would skip
+        command: ["find", "-L", root.wallpaperRoot, "-maxdepth", "3", "-type", "f",
                   "(", "-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.webp", "-o", "-iname", "*.gif", ")"]
         running: true
         stdout: StdioCollector {
@@ -81,7 +83,7 @@ Item {
             // wallDir/cacheDir passed as $1/$2 - never concatenated into the script
             _cacheWarmProc.command = ["sh", "-c",
                 'mkdir -p "$2" && ' +
-                'find "$1" -maxdepth 3 -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \\) ' +
+                'find -L "$1" -maxdepth 3 -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \\) ' +
                 '| while read img; do ' +
                 '  rel_path="${img#"$1"/}"; ' +
                 '  cache_name="${rel_path//\\//_}"; ' +
