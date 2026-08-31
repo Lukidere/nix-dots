@@ -326,6 +326,7 @@ in
     # --- System & CLI Utilities ---
     cifs-utils
     coreutils
+    glib # provides `gio` (file manager uses `gio trash` for delete)
     psmisc
     wget
     wl-clipboard
