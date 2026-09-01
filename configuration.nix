@@ -282,6 +282,10 @@ in
       "i2c" # ddcutil DDC/CI for external monitor brightness (MSI MAG271R)
     ];
   };
+  # Emergency access: with no root password a failed boot drops to emergency mode
+  # that prints "root account is locked" and can't be entered, forcing a rollback.
+  # Reuse dhm's hashed password so the rescue shell is reachable (disk is LUKS).
+  users.users.root.hashedPasswordFile = config.age.secrets."haslo-user".path;
 
   # DDC/CI over I2C so ddcutil can drive the external monitor's brightness
   hardware.i2c.enable = true;
