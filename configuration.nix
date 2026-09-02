@@ -150,56 +150,37 @@ in
   # when the nvidia module loads late (~90s) and cage starts before DRM is ready.
   services.seatd.enable = true;
 
-  # GTK greeter (regreet) - themed login matching the Rosé Pine dots
-  programs.regreet = {
+  # Custom quickshell greeter (login screen matching the desktop). Replaces the
+  # GTK regreet; greetd runs it inside cage as the `greeter` user, and a python
+  # bridge speaks greetd's length-prefixed IPC (see configs/quickshell-greeter/).
+  programs.regreet.enable = false;
+  environment.etc."quickshell-greeter".source = ./configs/quickshell-greeter;
+  services.greetd = {
     enable = true;
-    font = {
-      name = "Iosevka Nerd Font";
-      size = 12;
-      package = pkgs.nerd-fonts.iosevka;
+    settings.default_session = {
+      user = "greeter";
+      command = "${pkgs.writeShellScript "qs-greeter" ''
+        export GREETD_BRIDGE="${pkgs.python3}/bin/python3 /etc/quickshell-greeter/qs-greetd-bridge.py"
+        exec ${pkgs.cage}/bin/cage -s -- ${pkgs.quickshell}/bin/quickshell -p /etc/quickshell-greeter
+      ''}";
     };
-    settings = {
-      GTK = {
-        application_prefer_dark_theme = true;
-        cursor_theme_name = "Adwaita";
-      };
-      commands = {
-        reboot = [
-          "systemctl"
-          "reboot"
-        ];
-        poweroff = [
-          "systemctl"
-          "poweroff"
-        ];
-      };
-    };
-    # The module bakes this to an immutable /etc/greetd/regreet.css, so it only
-    # @imports the live file that wallust drives (see regreet-wallust below). This
-    # makes the login screen track the wallpaper palette exactly like gtklock.
-    extraCss = ''
-      @import url("file:///var/lib/regreet/regreet.css");
-    '';
   };
 
-  # Dynamic greeter theming: wallust renders ~/.cache/wallust/regreet.css per
-  # wallpaper; this path unit mirrors it (as root) to a world-readable file the
-  # greeter user can @import. /var persists, so the last palette carries to boot.
-  systemd.tmpfiles.rules = [
-    "d /var/lib/regreet 0755 root root -"
-    "C /var/lib/regreet/regreet.css 0644 root root - ${./configs/regreet/regreet.css}"
-  ];
-  systemd.paths.regreet-wallust = {
+  # Dynamic greeter theming: mirror wallust's colors.json (as root) to a
+  # world-readable file the greeter user can read. /var persists, so the last
+  # palette carries to the next boot; the greeter falls back to Rose Pine if absent.
+  systemd.tmpfiles.rules = [ "d /var/lib/greeter 0755 root root -" ];
+  systemd.paths.greeter-palette = {
     wantedBy = [ "multi-user.target" ];
     pathConfig = {
-      PathChanged = "/home/dhm/.cache/wallust/regreet.css";
-      Unit = "regreet-wallust.service";
+      PathChanged = "/home/dhm/.cache/wallust/colors.json";
+      Unit = "greeter-palette.service";
     };
   };
-  systemd.services.regreet-wallust = {
+  systemd.services.greeter-palette = {
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.coreutils}/bin/install -D -m 0644 /home/dhm/.cache/wallust/regreet.css /var/lib/regreet/regreet.css";
+      ExecStart = "${pkgs.coreutils}/bin/install -D -m 0644 /home/dhm/.cache/wallust/colors.json /var/lib/greeter/colors.json";
     };
   };
 
