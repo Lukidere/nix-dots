@@ -44,7 +44,7 @@ ShellRoot {
 
     function submit(pw) {
         if (busy || pw === "") return
-        root.busy = true; root.status = ""; root._pw = pw; root._phase = "creating"
+        root.busy = true; root.status = "Authenticating…"; root._pw = pw; root._phase = "creating"
         root._send({ type: "create_session", username: "dhm" })
     }
 
@@ -142,7 +142,7 @@ ShellRoot {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: root.status
                     visible: root.status !== ""
-                    color: root.errColor
+                    color: root.busy ? root.accent : root.errColor
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 12
                 }
             }
