@@ -64,6 +64,7 @@ ShellRoot {
             root._pw = ""; root.busy = false; root._phase = "idle"
             root.status = m.description || "Authentication failed"
             root._send({ type: "cancel_session" })   // greetd needs this before a retry
+            pwInput.forceActiveFocus()
         }
     }
 
@@ -99,7 +100,7 @@ ShellRoot {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "  dhm"
+                    text: "  dhm"
                     font.family: "Iosevka Nerd Font"; font.pixelSize: 16
                     color: root.accent
                     topPadding: 10
@@ -152,8 +153,8 @@ ShellRoot {
                 spacing: 20
                 Repeater {
                     model: [
-                        { ico: "", cmd: ["systemctl", "poweroff"] },
-                        { ico: "", cmd: ["systemctl", "reboot"] }
+                        { ico: "", cmd: ["systemctl", "poweroff"] },
+                        { ico: "", cmd: ["systemctl", "reboot"] }
                     ]
                     delegate: Rectangle {
                         required property var modelData
