@@ -161,7 +161,9 @@ in
       user = "greeter";
       command = "${pkgs.writeShellScript "qs-greeter" ''
         export GREETD_BRIDGE="${pkgs.python3}/bin/python3 /etc/quickshell-greeter/qs-greetd-bridge.py"
-        exec ${pkgs.cage}/bin/cage -s -- ${pkgs.quickshell}/bin/quickshell -p /etc/quickshell-greeter
+        # niri (layer-shell) rather than cage: it renders the quickshell greeter
+        # fullscreen with no decorations, unlike cage which floated/decorated it
+        exec ${config.programs.niri.package}/bin/niri -c /etc/quickshell-greeter/greeter.kdl
       ''}";
     };
   };

@@ -1,0 +1,33 @@
+// niri config for the greetd greeter: run quickshell fullscreen, no decorations.
+// greetd runs `niri -c` on this; quickshell inherits GREETD_SOCK / GREETD_BRIDGE
+// and draws the login surface as a layer-shell overlay.
+spawn-at-startup "/run/current-system/sw/bin/quickshell" "-p" "/etc/quickshell-greeter"
+
+prefer-no-csd
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+input {
+    keyboard {
+        xkb {
+            layout "pl"
+            options "caps:escape"
+        }
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+}
+
+layout {
+    gaps 0
+    focus-ring {
+        off
+    }
+    border {
+        off
+    }
+}
