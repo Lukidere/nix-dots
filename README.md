@@ -30,26 +30,27 @@ brightness needs a DDC/CI-capable monitor with DDC/CI enabled in its OSD.
      - power menu
 - Dashboard
      - Detailed volume and brightness menu (per-monitor brightness incl. external over DDC/CI)
-     - Per-app volume mixer: every app playing audio with its own slider and mute
+     - Per-app volume mixer: every app playing audio with its own draggable slider and mute
      - Connection info
      - Eye health toggle
      - Performance tab
      - YouTube Music launcher: search-as-you-type results, playlists, liked songs, build a queue on the fly (+ per track) while music plays - headless mpv with premium-quality streams, seekable progress bar
      - Detailed calendar with weather
      - Pomodoro timer and todo list
-     - Interactive coverflow wallpaper carousel (scroll/drag, click or Enter to set) which uses wallust to retheme most apps (cached thumbnails, instant browsing)
+     - Interactive coverflow wallpaper carousel (scroll/drag, click or Enter to set) which uses wallust to retheme most apps (cached thumbnails, instant browsing); a contrast pass keeps accent colours readable in the terminal, neovim and shell
      - Notification and clipboard center
      - Gmail inbox tab (unread badge, opening a mail marks it read via IMAP, simplified body view)
      - News tab: merged RSS/Atom feed reader (configurable feeds, click opens in browser)
      - Music tab: toggle Discord rich presence (cover art, progress, link) for what you are listening to
      - detailed internet/bluetooth control panel with info about the system
+     - Settings tab: default audio sink, night-light colour temperature + schedule, per-output display scale, wallust palette + a live palette editor (mock-bar preview, per-colour hex/RGB pickers), mic loopback, DND persistence, searchable keybind cheatsheet
 - App launcher with subsections and a calculator
-- File manager (trash-safe delete, sorting, keyboard navigation, open-terminal-here)
+- File manager (image thumbnail previews, trash-safe delete, sorting, keyboard navigation, open-terminal-here)
 - Emoji picker (bemoji + themed fuzzel, copies to clipboard) and color picker (hyprpicker, copies hex)
 - OCR any screen region to the clipboard (grim + tesseract eng/pol, MOD+SHIFT+T)
 - Screenshot notifications show a thumbnail preview of the capture
 - Mic noise suppression via EasyEffects (RNNoise), auto-loaded on login
-- Themed login (regreet) matching the gtklock lock screen
+- Custom quickshell login screen (greetd): universal username + password with "remember me", clock and power, wallust-themed to match the desktop
 - Silent boot with plymouth splash
 - Notifications with popups and OSD for volume/brightness
 - Fish shell with atuin (fuzzy history), zoxide and starship

@@ -171,7 +171,9 @@ in
   # Dynamic greeter theming: mirror wallust's colors.json (as root) to a
   # world-readable file the greeter user can read. /var persists, so the last
   # palette carries to the next boot; the greeter falls back to Rose Pine if absent.
-  systemd.tmpfiles.rules = [ "d /var/lib/greeter 0755 root root -" ];
+  # owned by the greeter user so it can persist the remembered username there;
+  # root (greeter-palette.service) still writes colors.json into it fine
+  systemd.tmpfiles.rules = [ "d /var/lib/greeter 0755 greeter greeter -" ];
   systemd.paths.greeter-palette = {
     wantedBy = [ "multi-user.target" ];
     pathConfig = {

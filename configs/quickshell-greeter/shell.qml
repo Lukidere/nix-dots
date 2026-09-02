@@ -3,10 +3,10 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 
-// Lean quickshell greeter: clock + password for user dhm + power, themed from the
-// wallust palette mirrored to /var/lib/greeter/colors.json (Rose Pine fallback).
-// Runs under niri as a fullscreen layer-shell surface (no decorations), driven by
-// greetd through the python bridge.
+// Universal quickshell greeter: username + password + optional "remember me",
+// clock and power. Themed from the wallust palette mirrored to
+// /var/lib/greeter/colors.json (Rose Pine fallback). Runs under niri as a
+// fullscreen layer-shell surface, driven by greetd through the python bridge.
 ShellRoot {
     id: root
 
@@ -27,10 +27,33 @@ ShellRoot {
     }
     Component.onCompleted: root._raw = palette.text()
 
+    // ── remembered username ──
+    property string lastUser: ""
+    property bool remember: true
+    FileView {
+        id: lastUserFile
+        path: "/var/lib/greeter/lastuser"
+        onLoaded: {
+            var u = lastUserFile.text().trim()
+            if (u !== "") { root.lastUser = u }
+        }
+    }
+    Component.onCompleted: {
+        var u = lastUserFile.text().trim()
+        if (u !== "") root.lastUser = u
+    }
+    property Process userWriteProc: Process { running: false }
+    function _persistUser(name) {
+        // dir /var/lib/greeter is owned by the greeter user (see configuration.nix)
+        userWriteProc.command = ["sh", "-c", "printf '%s' \"$1\" > /var/lib/greeter/lastuser", "_", name]
+        userWriteProc.running = false; userWriteProc.running = true
+    }
+
     // ── greetd IPC via the python bridge ──
     property string status: ""
     property bool busy: false
     property string _phase: "idle"   // idle -> creating -> starting
+    property string _user: ""
     property string _pw: ""
 
     Process {
@@ -43,10 +66,11 @@ ShellRoot {
     }
     function _send(obj) { bridge.write(JSON.stringify(obj) + "\n") }
 
-    function submit(pw) {
-        if (busy || pw === "") return
-        root.busy = true; root.status = "Authenticating…"; root._pw = pw; root._phase = "creating"
-        root._send({ type: "create_session", username: "dhm" })
+    function submit(user, pw) {
+        if (busy || user === "" || pw === "") return
+        root._user = user; root._pw = pw
+        root.busy = true; root.status = "Authenticating…"; root._phase = "creating"
+        root._send({ type: "create_session", username: user })
     }
 
     function _onMsg(line) {
@@ -58,6 +82,7 @@ ShellRoot {
         } else if (m.type === "success") {
             if (root._phase !== "starting") {
                 root._phase = "starting"
+                root._persistUser(root.remember ? root._user : "")
                 root._send({ type: "start_session", cmd: ["niri-session"] })
             }
             // else: session is launching, nothing more to do
@@ -65,12 +90,44 @@ ShellRoot {
             root._pw = ""; root.busy = false; root._phase = "idle"
             root.status = m.description || "Authentication failed"
             root._send({ type: "cancel_session" })   // greetd needs this before a retry
-            pwInput.forceActiveFocus()
+            pwField.input.forceActiveFocus()
         }
     }
 
     function power(cmd) { powerProc.command = cmd; powerProc.running = false; powerProc.running = true }
     Process { id: powerProc }
+
+    // reusable text field: rounded box + TextInput + placeholder
+    component Field: Rectangle {
+        property alias input: ti
+        property alias text: ti.text
+        property string placeholder: ""
+        property bool secret: false
+        signal accepted()
+        width: 320; height: 46; radius: 12
+        color: Qt.rgba(0, 0, 0, 0.35)
+        border.width: 2
+        border.color: ti.activeFocus ? root.accent : Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4)
+        opacity: root.busy ? 0.6 : 1.0
+        TextInput {
+            id: ti
+            anchors { fill: parent; leftMargin: 18; rightMargin: 18 }
+            verticalAlignment: TextInput.AlignVCenter
+            echoMode: parent.secret ? TextInput.Password : TextInput.Normal
+            passwordCharacter: "●"
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 16
+            color: root.fg
+            enabled: !root.busy
+            onAccepted: parent.accepted()
+        }
+        Text {
+            anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+            visible: ti.text === "" && !ti.activeFocus
+            text: parent.placeholder
+            font.family: "Iosevka Nerd Font"; font.pixelSize: 15
+            color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.4)
+        }
+    }
 
     Variants {
         model: Quickshell.screens
@@ -88,7 +145,7 @@ ShellRoot {
 
                 Column {
                     anchors.centerIn: parent
-                    spacing: 22
+                    spacing: 16
 
                     Text {
                         id: clock
@@ -104,45 +161,57 @@ ShellRoot {
                         text: Qt.formatDateTime(clock.now, "dddd, d MMMM")
                         font.family: "Iosevka Nerd Font"; font.pixelSize: 14
                         color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.7)
+                        bottomPadding: 10
                     }
 
-                    Text {
+                    Field {
+                        id: userField
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "  dhm"
-                        font.family: "Iosevka Nerd Font"; font.pixelSize: 16
-                        color: root.accent
-                        topPadding: 10
+                        placeholder: "Username"
+                        text: root.lastUser
+                        onAccepted: {
+                            if (pwField.text === "") pwField.input.forceActiveFocus()
+                            else root.submit(userField.text.trim(), pwField.text)
+                        }
+                        Component.onCompleted: if (root.lastUser === "") input.forceActiveFocus()
                     }
 
-                    Rectangle {
+                    Field {
+                        id: pwField
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: 320; height: 46; radius: 12
-                        color: Qt.rgba(0, 0, 0, 0.35)
-                        border.width: 2
-                        border.color: pwInput.activeFocus
-                            ? root.accent
-                            : Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4)
-                        opacity: root.busy ? 0.6 : 1.0
+                        placeholder: "Password"
+                        secret: true
+                        onAccepted: { root.submit(userField.text.trim(), pwField.text); pwField.text = "" }
+                        Component.onCompleted: if (root.lastUser !== "") input.forceActiveFocus()
+                    }
 
-                        TextInput {
-                            id: pwInput
-                            anchors { fill: parent; leftMargin: 18; rightMargin: 18 }
-                            verticalAlignment: TextInput.AlignVCenter
-                            echoMode: TextInput.Password
-                            passwordCharacter: "●"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 16
-                            color: root.fg
-                            enabled: !root.busy
-                            focus: true
-                            onAccepted: { root.submit(text); text = "" }
-                            Component.onCompleted: forceActiveFocus()
+                    // remember-me toggle
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 8
+                        Rectangle {
+                            width: 18; height: 18; radius: 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: root.remember ? root.accent : Qt.rgba(0, 0, 0, 0.35)
+                            border.width: 2
+                            border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.6)
+                            Text {
+                                anchors.centerIn: parent
+                                visible: root.remember
+                                text: ""; font.family: "Iosevka Nerd Font"; font.pixelSize: 11
+                                color: root.bg
+                            }
                         }
                         Text {
-                            anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
-                            visible: pwInput.text === "" && !pwInput.activeFocus
-                            text: "Password"
-                            font.family: "Iosevka Nerd Font"; font.pixelSize: 15
-                            color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.4)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Remember me"
+                            font.family: "Iosevka Nerd Font"; font.pixelSize: 12
+                            color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.75)
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.remember = !root.remember
                         }
                     }
 
